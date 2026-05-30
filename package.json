@@ -1,0 +1,13 @@
+{
+  "name": "npm-update-helper",
+  "version": "0.1.0",
+  "description": "Deterministic mechanics for the npm-update workflow (scan/classify/validate/node-check).",
+  "type": "module",
+  "bin": {
+    "npm-update-helper": "bin/npm-update-helper.mjs"
+  },
+  "scripts": {
+    "test": "node --test"
+  },
+  "license": "MIT"
+}
