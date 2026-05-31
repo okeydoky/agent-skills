@@ -2,3 +2,4 @@ node_modules/
 *.stackdump
 *.log
 .DS_Store
+.claude/
