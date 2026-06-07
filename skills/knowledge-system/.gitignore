@@ -1,0 +1,10 @@
+.gstack/
+bash.exe.stackdump
+
+# Knowledge-system local zone: pre-approval drafts never get committed (single-writer
+# invariant — only `materialize` writes the committed base). DESIGN.md §2.4.
+**/.knowledge/inbox/
+# v2 (local-only when added):
+# **/.knowledge/retrieval-log.jsonl
+# **/.knowledge/STATS.md
+

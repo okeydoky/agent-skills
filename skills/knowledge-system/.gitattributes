@@ -1,0 +1,7 @@
+# The knowledge base is a deterministic, regenerated artifact: build-index.mjs writes LF.
+# Force the whole .knowledge tree to LF so regen produces clean diffs on every platform
+# (without this, repos with core.autocrlf=true show EOL-only churn on every materialize).
+**/.knowledge/** text eol=lf
+
+# The regen tool itself is LF wherever it travels (source + the per-repo _tools/ copy).
+*.mjs text eol=lf
