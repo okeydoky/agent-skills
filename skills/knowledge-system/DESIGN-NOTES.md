@@ -31,6 +31,24 @@ lot holds open topics we must design before building.
   `README.md` is now GENERAL-AUDIENCE (install + daily use); maintainer/build notes moved to
   `DEVELOPMENT.md`. Both installers validated; ps1 actually ran against the real `~/.claude` (now
   globally installed on this machine — remove = delete those two dirs).
+- **Increment 4 DONE (2026-06-09):** platform split + content-only repos (revises increment 3's
+  delivery model after a poor Windsurf install experience). Evaluated forking the skill per
+  platform → **rejected**: the core (contract, tool, templates, procedures) is platform-agnostic
+  and a fork would drift. Adopted instead: **shared core + thin per-platform front-ends**
+  (`frontends/claude/` → `~/.claude/commands/`; `frontends/windsurf/` →
+  `~/.codeium/windsurf/global_workflows/`, the global-workflow location Devin Desktop supports —
+  workflows have no assets folder, so front-ends reference the shared procedure by absolute path).
+  Assets moved to the platform-neutral **`~/.knowledge-system/`** (`contract/`, `tools/`,
+  `templates/`, `workflows/` — the full procedures live here too; the installed front-ends are
+  4-line pointers). `/knowledge-init` now installs **content only** (contract + `.knowledge/`
+  scaffold + git wiring) — no `_tools/`, no `_templates/`, no command copies in the repo — so
+  updating the skill = re-run the installer, zero churn in initialized repos; init also deletes
+  legacy per-repo `_tools/`/`_templates/`. `materialize` regenerates via the global tool
+  (`node ~/.knowledge-system/tools/build-index.mjs .`). Installers auto-detect platforms
+  (`install.sh|ps1 [claude|windsurf|all]`) and clean up the legacy `~/.claude/knowledge-system/`
+  asset dir. Verified against current Devin Desktop docs: rules prefer `.devin/rules/` (legacy
+  `.windsurf/rules/`); workflows are still `.windsurf/workflows/` per-repo and
+  `~/.codeium/windsurf/global_workflows/` globally, 12k-char cap, manual-only.
 - **Status (design):** complete and locked; implementation underway. (Design itself was finished
   mid office-hours; the rest of this block is the design-phase record.)
 - **Last session ended:** 2026-06-04. Locked dec. 7–13. **PARKING LOT IS EMPTY** — every core

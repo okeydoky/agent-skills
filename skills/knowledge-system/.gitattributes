@@ -3,5 +3,5 @@
 # (without this, repos with core.autocrlf=true show EOL-only churn on every materialize).
 **/.knowledge/** text eol=lf
 
-# The regen tool itself is LF wherever it travels (source + the per-repo _tools/ copy).
+# The regen tool itself is LF wherever it travels (source + the global ~/.knowledge-system/tools/ copy).
 *.mjs text eol=lf

@@ -59,7 +59,8 @@ Run it at the end of a session, or whenever drafts have accumulated.
    - **Route**, in order: `package:` if set → else the package whose `.knowledge/inbox/` the draft
      sits in → else by `refs`. A term that spans >1 package (or routes nowhere) is cross-cutting →
      the **root** `.knowledge/CONTEXT.md`.
-   - Create that `CONTEXT.md` lazily from `_templates/CONTEXT.md` if absent, and register the
+   - Create that `CONTEXT.md` lazily from the global `~/.knowledge-system/templates/CONTEXT.md`
+     if absent, and register the
      package in the root `CONTEXT-MAP.md` (under `## Contexts`) the first time it gets a term.
    - **Append one line** rendered from the draft's `term` + `definition` (+ `avoid`); drop the
      routing/provenance fields (`kind`/`package`/`refs`/`source`):
@@ -70,10 +71,12 @@ Run it at the end of a session, or whenever drafts have accumulated.
    - Keep `CONTEXT.md` glossary-only: if a "glossary" draft is really implementation detail or a
      decision, it's a **card** — reclassify it, don't pollute the glossary.
 
-5. **Regenerate the index** (the build artifact — never hand-edit it):
+5. **Regenerate the index** (the build artifact — never hand-edit it) with the **global** tool —
+   initialized repos deliberately carry no tooling:
    ```
-   node .knowledge/_tools/build-index.mjs
+   node ~/.knowledge-system/tools/build-index.mjs .
    ```
+   (Windows: `node "$env:USERPROFILE\.knowledge-system\tools\build-index.mjs" .`)
    This rewrites every `.knowledge/index.md` (local + root aggregator) from card frontmatter.
    If it reports skipped cards, fix their frontmatter and re-run. Glossary-only runs still benefit
    (the index footer links to `CONTEXT.md`), but `CONTEXT.md`/`CONTEXT-MAP.md` are **not** generated

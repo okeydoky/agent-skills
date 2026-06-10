@@ -19,7 +19,8 @@ skills/
     bin/               # optional: helper scripts / CLI tools
     lib/               # optional: pure-function modules for helpers
     test/              # optional: unit tests
-    commands/          # optional: sub-commands (for multi-command skills)
+    workflows/         # optional: sub-workflows (for multi-command skills)
+    frontends/         # optional: thin per-platform entry points (claude/, windsurf/)
     templates/         # optional: file templates the skill installs
     install.sh/.ps1    # optional: one-time global install script
 ```
