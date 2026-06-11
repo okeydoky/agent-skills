@@ -8,6 +8,11 @@ A monorepo for agentic skill and workflow development — reusable, installable 
 |-------|---------|----------|
 | **npm-update** | Upgrade an npm repo to its newest compatible dependencies; handles Nx/Angular/NestJS migrations, conflict resolution, and breaking-change fixing | [`skills/npm-update/`](skills/npm-update/) |
 | **knowledge-system** | Always-on agent contract + two workflows that give any repo compounding session recall via an atomic card/glossary store | [`skills/knowledge-system/`](skills/knowledge-system/) |
+| **ticket-to-plan** | Fetch a Jira ticket + related issues, set up a branch, and delegate to the planner; transitions the ticket and hands off for fresh-session execution | [`skills/ticket-to-plan/`](skills/ticket-to-plan/) |
+| **planner** | Discovery interview (with mandatory pushback and recommended answers) that produces a self-sufficient, phase-organized plan with per-phase model recommendations | [`skills/planner/`](skills/planner/) |
+| **execute-plan** | Execute one or more plan phases, verify with tests, and update the plan with downstream-focused implementation notes | [`skills/execute-plan/`](skills/execute-plan/) |
+| **draft-pr** | Draft a PR from the diff + plan files, then transition the Jira ticket and attach the plans | [`skills/draft-pr/`](skills/draft-pr/) |
+| **bootstrap-context** | One-time interview that seeds a repo's (or monorepo app's) `CONTEXT.md` glossary + durable-decision files for the planner to read | [`skills/bootstrap-context/`](skills/bootstrap-context/) |
 
 ## Structure
 

@@ -72,7 +72,12 @@ Search for plan files that correspond to this work. A plan file captures the ori
      ```
 4. **Workspace root** — search for files matching `*plan*.md` or `<JIRA-ID>-*.md` in the workspace root.
 
-**If no plan files are found**, proceed without plan context — do not invent information.
+**If no plan files are found**, do NOT silently proceed — without plan context, PR body quality degrades sharply on lightweight models. Pause and tell the user no plan file was located, then offer both options in a single message:
+
+1. **Provide an anchor** — the user gives 1–2 sentences of what/why, which you use to anchor the PR body alongside the diff.
+2. **Continue diff-only** — proceed from the diff and commit messages alone. Recommend that the user re-run this workflow on a stronger model (Haiku or above) if they pick this and the work is non-trivial.
+
+Either way, never invent a "why" that the diff and commit messages cannot support.
 
 **If plan files are found**, you **MUST read every file in the list** before moving to Step 2. Do NOT stop after reading the first one. Process them one by one until all are read:
 

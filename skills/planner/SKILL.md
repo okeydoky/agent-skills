@@ -48,12 +48,22 @@ The goal of this step is to surface hidden requirements, edge cases, and constra
 
 Before asking questions, do your homework:
 
+- **Read the repo context files first.** Read the root `CONTEXT.md` and, in a monorepo, the `CONTEXT.md` of the app this task touches (e.g., `apps/<app>/CONTEXT.md`). These files are the authoritative glossary and durable-decision record — **never ask a question they already answer**, and never contradict a decision recorded there without explicitly flagging the conflict. If no `CONTEXT.md` exists, note it once in chat ("No CONTEXT.md found for this app — consider running the `bootstrap-context` workflow") and proceed without it. Do NOT scaffold one mid-plan.
 - Read the files/modules most likely affected by this task.
 - Identify existing patterns, abstractions, and conventions relevant to the work.
 - Note potential integration points, shared interfaces, and downstream consumers.
 - **Blast-radius analysis (mandatory for data-model changes):** If the task introduces or modifies a data field, column, or entity property, systematically search for all consumers of the _analogous existing field_ (e.g., if adding `secondaryReasons`, grep for every consumer of `primaryReason` or `dispositionReasonId`). List every component, pipe, service, query, and template that touches the equivalent data. This surfaces read-side consumers (search results, detail views, reports, review screens) that are easy to overlook when focused on the write path. Classify each consumer as **in-scope** or **explicitly out-of-scope** with a one-line rationale.
 
-### 3b. Generate Probing Questions
+### 3b. Pushback (Mandatory)
+
+You are not a requirements transcriber — disagreement is a deliverable. Before generating questions, evaluate the ticket's proposed approach against what you found in the codebase and present a short **Pushback** block in chat:
+
+- **Strongest objection** — the single best argument that the ticket's approach (or a requirement) is wrong, over-scoped, under-scoped, or in conflict with an existing pattern or a `CONTEXT.md` decision. Include a recommendation for how to resolve it.
+- **Simplest alternative** — the leanest way to achieve the user's intent, if it differs from what the ticket prescribes.
+
+If, after genuine investigation, you have no real objection, write: "No objection — <one sentence on why the approach is sound>." The block itself is never optional — an explicit all-clear is the required output. Do NOT manufacture trivial objections to fill the section.
+
+### 3c. Generate Probing Questions
 
 Produce **3–8 focused questions** (not more) across these categories. Skip categories that are genuinely irrelevant, but you must cover at least 3 categories:
 
@@ -68,9 +78,14 @@ Produce **3–8 focused questions** (not more) across these categories. Skip cat
 | **Testing expectations**        | Unit tests? Integration tests? What level of coverage? Any specific scenarios to test?                                                                                                                          |
 | **Ambiguity & trade-offs**      | Where are there multiple valid approaches? What trade-offs should the user weigh in on?                                                                                                                         |
 
-### 3c. Ask and Wait
+Two requirements for the questions themselves:
 
-- Present questions as a concise numbered list, grouped by category.
+- **Every question carries a recommended answer.** Based on your codebase investigation, attach a one-line recommended answer with its rationale to each question. This lets the user reply "all recommended except #3, which should be X" — resolving the whole interview in a single round instead of several.
+- **Stress-test with concrete scenarios, not abstractions.** Where the task involves data models or relationships, pose specific edge-case scenarios ("What happens when a Pitch has zero videos?", "Two users edit the same disposition concurrently — who wins?") rather than generic prompts ("Any edge cases?"). Concrete scenarios surface real answers; abstract questions surface shrugs.
+
+### 3d. Ask and Wait
+
+- Present questions as a concise numbered list, grouped by category, each with its **Recommended:** line.
 - Briefly explain _why_ each question matters (one sentence) so the user understands the impact of their answer.
 - **STOP and wait for the user's answers.** Do NOT proceed to Step 4 until you have responses.
 - If the user's answers reveal further ambiguity, ask follow-up questions (but keep it to one additional round max).
@@ -292,11 +307,23 @@ Before presenting to the user, critically evaluate the plan against this checkli
 
 If any answer is "no," revise the plan before proceeding. Add missing specificity, context, or rationale.
 
-## Step 8: Confirm with User
+## Step 8: Confirm with User & Propose CONTEXT.md Updates
 
-End your response by asking the user to review the plan and confirm before execution begins. For example:
+End with a **single message** containing both items below — do not split them into separate rounds:
 
-> Does this plan look good? Let me know if you'd like to adjust anything before I start.
+1. **Plan confirmation** — ask the user to review the plan and confirm before execution begins. For example:
+
+   > Does this plan look good? Let me know if you'd like to adjust anything before I start.
+
+2. **CONTEXT.md update proposals (if any)** — review the Q&A Log and Design Decisions for entries worth promoting to the relevant `CONTEXT.md` (root, or the app's file in a monorepo):
+
+   - **Glossary terms** — only terms coined inside this codebase whose meaning isn't obvious from the name. General programming concepts never qualify.
+   - **Durable decisions** — only decisions passing **all three** tests: hard to reverse, AND surprising without context, AND the result of a genuine trade-off. Most Design Decisions fail this test — that is expected and correct.
+   - **Removals** — if planning revealed an existing `CONTEXT.md` entry is outdated or wrong, propose removing or correcting it.
+
+   The promotion filter (same as for the file itself): not cheaply re-derivable from the code, and costly to get wrong. A 50-line file the agent trusts beats a 500-line wiki it skims.
+
+   Present each proposal as a one-line addition/removal. Apply only what the user approves. If nothing qualifies, write "No CONTEXT.md updates proposed" — proposing nothing is the common case.
 
 ---
 

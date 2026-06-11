@@ -24,6 +24,12 @@ description: Execute one or more phases from an implementation plan, then update
 - If earlier phases have implementation notes (marked ✅ with notes), read them carefully. These contain deviations, discoveries, and context that may affect your work.
 - Treat implementation notes as **authoritative** — they override the original plan steps if there's a conflict (the notes reflect what actually happened).
 
+### 0d. Read Repo Context
+
+- If the repo has a root `CONTEXT.md` (and, in a monorepo, an `apps/<app>/CONTEXT.md` for the app this plan touches), read them before implementing. They are the authoritative glossary and durable-decision record.
+- If a plan step would contradict a decision recorded in `CONTEXT.md`, **stop and flag it to the user** before implementing — do not silently follow either source.
+- If no `CONTEXT.md` exists, proceed without it.
+
 ---
 
 ## Step 1: Implement the Target Phase(s)
@@ -32,6 +38,7 @@ description: Execute one or more phases from an implementation plan, then update
 - Reference the `## Context for Implementer` section for file locations, patterns, and architectural constraints.
 - After completing each step, mentally verify it against the plan's intent — don't just mechanically follow instructions if something doesn't make sense in context.
 - If any step is ambiguous, contradicts implementation notes from a prior phase, or requires a decision not covered by the plan's Design Decisions section — **stop and ask the user**. Do NOT guess.
+- **Verify before declaring done:** run the tests relevant to the changed code (at minimum, the affected projects' unit tests). A phase with failing tests is NOT complete — fix the failures, or stop and ask the user if the failures are pre-existing or out of scope. The result becomes the "Test status" line in the implementation notes (Step 2c).
 
 ---
 
@@ -39,7 +46,7 @@ description: Execute one or more phases from an implementation plan, then update
 
 > **This step is critical.** The plan file is a living document shared across sessions. Updating it ensures downstream phases have accurate context.
 
-### 5a. Mark Phase(s) as Complete
+### 2a. Mark Phase(s) as Complete
 
 For each completed phase, update its heading in the plan file:
 
@@ -53,7 +60,7 @@ Add a completion timestamp as a blockquote below the heading:
 > Completed: YYYY-MM-DD
 ```
 
-### 5b. Mark Individual Steps
+### 2b. Mark Individual Steps
 
 Mark each completed step with a checkbox:
 
@@ -62,7 +69,7 @@ Mark each completed step with a checkbox:
 5. Update backend tests ✅
 ```
 
-### 5c. Write Implementation Notes
+### 2c. Write Implementation Notes
 
 Append an **`> Implementation Notes:`** block under the completed phase heading. This is a **handoff brief for the next session**, NOT a journal of what you did.
 
@@ -100,7 +107,7 @@ Example:
 > - All 78 tests pass.
 ```
 
-### 5d. Update Assumptions (if applicable)
+### 2d. Update Assumptions (if applicable)
 
 If an assumption from the `## Assumptions & Risks` table was **validated or invalidated** during implementation, update its row:
 

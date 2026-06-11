@@ -49,10 +49,7 @@ Before proceeding to Step 2, compile a concise context summary that includes:
 
 This synthesized context will be passed to the `planner` skill in Step 3.
 
-### 1d. Update Ticket Status to In Development
-
-- Use the `jira-manager` skill to transition the primary ticket's status to **In Development**.
-- If the transition fails, report the error to the user and continue to Step 2.
+> **Note:** Do NOT transition the ticket's status yet — discovery may still reshape or invalidate the work. The transition to **In Development** happens in Step 5, after the plan is confirmed.
 
 ## Step 2: Set Up Development Branch
 
@@ -82,6 +79,22 @@ After the planner skill completes, verify the generated plan meets the **handoff
 > **Litmus test:** Could a brand-new agent session (without this conversation's context) pick up the plan file and execute it without needing to ask clarifying questions?
 
 If the plan references vague terms ("the relevant service", "update as needed"), contains steps that require re-discovery of context, or lacks rationale for key decisions — **send it back to the planner for revision** before confirming with the user.
+
+## Step 5: Transition Ticket & Hand Off
+
+Only run this step **after the user has confirmed the plan** (the planner skill's final confirmation).
+
+### 5a. Update Ticket Status to In Development
+
+- Use the `jira-manager` skill to transition the primary ticket's status to **In Development**.
+- If the transition fails, report the error to the user and continue.
+
+### 5b. Hand Off for Execution
+
+- The **default execution mode is a fresh session per phase (or phase batch)**, using the model recommended in the plan's Phase Complexity Summary. A new session costs nothing extra under per-prompt pricing, sheds planning context the executor doesn't need, and lets the user drop to the cheaper recommended model. Executing in this session is the exception, only when the user explicitly asks.
+- Close by telling the user the plan file path, the first phase's recommended model, and any batching hint, e.g.:
+
+  > Plan confirmed and ticket transitioned. To execute: start a new session with **Sonnet 4.6** and run `/execute-plan ~/.windsurf/plans/OASIS-495-sync-upstart.md Phase 1` (Phases 1–2 can be batched).
 
 ---
 
