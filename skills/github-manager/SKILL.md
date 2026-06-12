@@ -127,11 +127,42 @@ $SKILL_DIR = Split-Path -Parent $PSCommandPath
 
 For GET requests omit the body argument. For DELETE requests omit the body and use `DELETE` as the method.
 
+### PowerShell Payload Rule (Required for Complex JSON)
+
+When using PowerShell with `POST`, `PATCH`, or `PUT`, prefer **file-based payloads** over inline JSON.
+
+- The helper script already supports payload files directly.
+- Inline JSON with nested quotes/newlines can trigger PowerShell continuation mode (`>>`) and break execution.
+- If you see `>>`, press `Ctrl+C`, then rerun using a payload file.
+
+**Recommended pattern (PowerShell):**
+
+```powershell
+$payloadPath = Join-Path $PWD "pr_payload.json"
+@'
+{
+  "title": "My PR title",
+  "head": "feature/my-branch",
+  "base": "main",
+  "body": "Multi-line body with \"quotes\" and markdown.",
+  "draft": false
+}
+'@ | Set-Content -Path $payloadPath -Encoding UTF8
+
+& "$SKILL_DIR\scripts\github.ps1" "/repos/$GH_OWNER/$GH_REPO/pulls" $payloadPath POST
+
+Remove-Item $payloadPath -ErrorAction SilentlyContinue
+```
+
+Use inline JSON in PowerShell only for very small/simple one-line payloads.
+
 ### Inline Snippet (Alternative)
 
 If the helper scripts are not available, use this reusable inline snippet.
 
 > **Critical**: Always wrap in `powershell -Command { ... }`. Do NOT run as a plain one-liner — semicolons are truncated by the shell runner and the command will silently produce no output.
+>
+> **Important limitation**: For complex request bodies, do not inline JSON in this snippet. Read JSON from a file and pass it as `-Body $body`.
 
 **PowerShell**:
 
@@ -140,6 +171,22 @@ powershell -Command { $cfg = Get-Content "$env:USERPROFILE\.levelup" | ConvertFr
 ```
 
 For GET requests, omit `-Body`. For DELETE, use `-Method DELETE` and omit `-Body`.
+
+**Inline fallback with file-based body (PowerShell):**
+
+```powershell
+powershell -Command {
+  $cfg = Get-Content "$env:USERPROFILE\.levelup" | ConvertFrom-StringData
+  $hdrs = @{
+    Authorization = "token $($cfg.GH_TOKEN)"
+    Accept = 'application/vnd.github+json'
+    'X-GitHub-Api-Version' = '2022-11-28'
+    'Content-Type' = 'application/json'
+  }
+  $body = Get-Content "<PAYLOAD_FILE_PATH>" -Raw
+  Invoke-RestMethod -Uri "https://api.github.com<ENDPOINT>" -Headers $hdrs -Method <METHOD> -Body $body | ConvertTo-Json -Depth 10
+}
+```
 
 ## 3. Operations
 
@@ -166,8 +213,12 @@ bash "$SKILL_DIR/scripts/github.sh" "/repos/$GH_OWNER/$GH_REPO/pulls" \
 **PowerShell**:
 
 ```powershell
-& "$SKILL_DIR\scripts\github.ps1" "/repos/$GH_OWNER/$GH_REPO/pulls" `
-  '{"title":"...","head":"<branch>","base":"<default>","body":"...","draft":false}' POST
+$payloadPath = Join-Path $PWD "pr_payload.json"
+@'
+{"title":"...","head":"<branch>","base":"<default>","body":"...","draft":false}
+'@ | Set-Content -Path $payloadPath -Encoding UTF8
+& "$SKILL_DIR\scripts\github.ps1" "/repos/$GH_OWNER/$GH_REPO/pulls" $payloadPath POST
+Remove-Item $payloadPath -ErrorAction SilentlyContinue
 ```
 
 **Post-creation**: Report the PR number and URL to the user.
@@ -205,8 +256,12 @@ bash "$SKILL_DIR/scripts/github.sh" "/repos/$GH_OWNER/$GH_REPO/pulls/<NUMBER>" \
 ```
 
 ```powershell
-& "$SKILL_DIR\scripts\github.ps1" "/repos/$GH_OWNER/$GH_REPO/pulls/<NUMBER>" `
-  '{"title":"...","body":"..."}' PATCH
+$payloadPath = Join-Path $PWD "pr_update_payload.json"
+@'
+{"title":"...","body":"..."}
+'@ | Set-Content -Path $payloadPath -Encoding UTF8
+& "$SKILL_DIR\scripts\github.ps1" "/repos/$GH_OWNER/$GH_REPO/pulls/<NUMBER>" $payloadPath PATCH
+Remove-Item $payloadPath -ErrorAction SilentlyContinue
 ```
 
 ### E. Add Comment to PR
@@ -219,8 +274,12 @@ bash "$SKILL_DIR/scripts/github.sh" "/repos/$GH_OWNER/$GH_REPO/issues/<NUMBER>/c
 ```
 
 ```powershell
-& "$SKILL_DIR\scripts\github.ps1" "/repos/$GH_OWNER/$GH_REPO/issues/<NUMBER>/comments" `
-  '{"body":"Comment text"}' POST
+$payloadPath = Join-Path $PWD "pr_comment_payload.json"
+@'
+{"body":"Comment text"}
+'@ | Set-Content -Path $payloadPath -Encoding UTF8
+& "$SKILL_DIR\scripts\github.ps1" "/repos/$GH_OWNER/$GH_REPO/issues/<NUMBER>/comments" $payloadPath POST
+Remove-Item $payloadPath -ErrorAction SilentlyContinue
 ```
 
 ### F. Request Reviewers
@@ -231,8 +290,12 @@ bash "$SKILL_DIR/scripts/github.sh" "/repos/$GH_OWNER/$GH_REPO/pulls/<NUMBER>/re
 ```
 
 ```powershell
-& "$SKILL_DIR\scripts\github.ps1" "/repos/$GH_OWNER/$GH_REPO/pulls/<NUMBER>/requested_reviewers" `
-  '{"reviewers":["username1","username2"]}' POST
+$payloadPath = Join-Path $PWD "pr_reviewers_payload.json"
+@'
+{"reviewers":["username1","username2"]}
+'@ | Set-Content -Path $payloadPath -Encoding UTF8
+& "$SKILL_DIR\scripts\github.ps1" "/repos/$GH_OWNER/$GH_REPO/pulls/<NUMBER>/requested_reviewers" $payloadPath POST
+Remove-Item $payloadPath -ErrorAction SilentlyContinue
 ```
 
 ### G. Merge Pull Request
@@ -257,8 +320,12 @@ bash "$SKILL_DIR/scripts/github.sh" "/repos/$GH_OWNER/$GH_REPO/pulls/<NUMBER>/re
    ```
 
    ```powershell
-   & "$SKILL_DIR\scripts\github.ps1" "/repos/$GH_OWNER/$GH_REPO/pulls/<NUMBER>/merge" `
-     '{"merge_method":"squash"}' PUT
+   $payloadPath = Join-Path $PWD "pr_merge_payload.json"
+   @'
+   {"merge_method":"squash"}
+   '@ | Set-Content -Path $payloadPath -Encoding UTF8
+   & "$SKILL_DIR\scripts\github.ps1" "/repos/$GH_OWNER/$GH_REPO/pulls/<NUMBER>/merge" $payloadPath PUT
+   Remove-Item $payloadPath -ErrorAction SilentlyContinue
    ```
 
    Supported `merge_method` values: `merge`, `squash`, `rebase`. Default to `squash` unless the user specifies otherwise.
