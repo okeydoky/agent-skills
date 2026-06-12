@@ -1,0 +1,19 @@
+{
+  "COMMON_ITRACK": {
+    "summary": "summary",
+    "description": "description",
+    "issuetype": "issuetype",
+    "project": "project",
+    "priority": "priority",
+    "assignee": "assignee",
+    "labels": "labels",
+    "acceptance_criteria": "customfield_10777",
+    "epic_link": "customfield_10970",
+    "epic_name": "customfield_10971",
+    "scrum_team": "customfield_16473",
+    "story_points": "customfield_10002"
+  },
+  "PROJECT_MAPPINGS": {
+    "__comment": "Add project-specific mappings here, e.g. 'GENAIISR': { 'acceptance_criteria': 'customfield_12345' }"
+  }
+}
