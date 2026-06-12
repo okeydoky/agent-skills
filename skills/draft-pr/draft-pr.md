@@ -13,7 +13,7 @@ description: Create a draft PR and optionally update the associated Jira ticket.
 
 ## Step 1: Gather Context
 
-### Step 1a: Git Context
+### Step 1a: Collect Git Context
 
 Run these commands and analyze the output. Do not skip any.
 
@@ -37,7 +37,31 @@ Run these commands and analyze the output. Do not skip any.
 
 If the diff is empty (branch is in sync with base), stop and tell the user — there is nothing to PR.
 
-### Step 1b: Extract the Jira Ticket
+### Step 1b: Verify Branch Is Pushed
+
+Check if the current branch has been pushed to the remote.
+
+**All platforms** (bash/Git Bash/PowerShell):
+
+```
+git rev-parse --abbrev-ref @{upstream} 2>/dev/null || echo "NOT_PUSHED"
+```
+
+**Expected output:**
+
+- If pushed: `origin/<branch-name>` (or similar remote name)
+- If NOT pushed: `NOT_PUSHED`
+
+**If the output is "NOT_PUSHED":**
+
+1. Inform the user that the branch has not been pushed yet.
+2. Offer to push it now:
+   - **bash/Git Bash**: `git push -u origin <current-branch-name>`
+   - **PowerShell**: `git push -u origin <current-branch-name>`
+3. Wait for confirmation. If the user declines, **STOP** and tell them the branch must be pushed before proceeding.
+4. If confirmed or if the branch is already pushed, continue to Step 1c.
+
+### Step 1c: Detect Jira Ticket
 
 Look for a Jira ticket key in this priority order. A Jira key matches the pattern `[A-Z]{2,}-\d+` (e.g. `PROJ-412`, `ABC-7`).
 
@@ -51,23 +75,23 @@ Look for a Jira ticket key in this priority order. A Jira key matches the patter
 
 > The ticket detected here is shared with Step 2 for Jira integration — no re-detection needed there.
 
-### Step 1c: Locate Plan Files
+### Step 1d: Find Plan Files
 
 Search for plan files that correspond to this work. A plan file captures the original intent and implementation design — it is valuable context for drafting an accurate PR.
 
 **Search order** (stop at the first match set; use all matches within a tier):
 
 1. **User-provided** — if the user explicitly provides plan file paths, use those.
-2. **Open editors** — check currently open editor tabs for any `.md` files whose name contains "plan" OR starts with the Jira ticket ID (e.g., `OASIS-495-*.md`).
-3. **Plans directory** — search `~/.windsurf/plans/` (Windows: `$env:USERPROFILE\.windsurf\plans\`) for files matching `*plan*.md` OR `<JIRA-ID>-*.md`:
-   - **bash**: `ls ~/.windsurf/plans/ 2>/dev/null | grep -iE "(plan|<JIRA-ID>-)" || true`
+2. **Open editors** — check currently open editor tabs for any `.md` files whose name starts with the Jira ticket ID (e.g., `OASIS-495-*.md`).
+3. **Plans directory** — search `~/.windsurf/plans/` (Windows: `$env:USERPROFILE\.windsurf\plans\`) for files matching `<JIRA-ID>-*.md`:
+   - **bash**: `ls ~/.windsurf/plans/ 2>/dev/null | grep -iE "(<JIRA-ID>-)" || true`
    - **PowerShell**:
      ```powershell
      powershell -Command {
        $plansDir = "$env:USERPROFILE\.windsurf\plans"
        $jiraId = '<JIRA-ID>'
        Get-ChildItem $plansDir -Filter '*.md' -ErrorAction SilentlyContinue |
-         Where-Object { $_.Name -like '*plan*' -or $_.Name -like "$jiraId-*" }
+         Where-Object { $_.Name -like "$jiraId-*" }
      }
      ```
 4. **Workspace root** — search for files matching `*plan*.md` or `<JIRA-ID>-*.md` in the workspace root.
@@ -102,9 +126,9 @@ Wait for the user's reply. Do **not** continue to Step 2 until the user has resp
 
 ## Step 2: Analyze and Draft PR Content
 
-### Step 2a: Analyze the Changes
+### Step 2a: Analyze Changes
 
-Combine insights from the **git diff** (Step 1a) and the **plan** (Step 1c, if available) to determine:
+Combine insights from the **git diff** (Step 1a) and the **plan** (Step 1d, if available) to determine:
 
 - **Type**: infer from the actual changes, NOT the branch name. Use one of:
   `feat` (new feature), `fix` (bug fix), `refactor` (no behavior change),
@@ -115,7 +139,7 @@ Combine insights from the **git diff** (Step 1a) and the **plan** (Step 1c, if a
 - **How** — only the non-obvious implementation decisions a reviewer should know. The plan's design decisions are a primary source here.
 - **Remaining work** — if the plan shows phases or TODOs not reflected in the diff, note them.
 
-### Step 2b: Generate the PR Title and Body
+### Step 2b: Generate PR Title and Body
 
 If the user provides a PR title or body, use their input. Otherwise, generate from the analysis above.
 
@@ -163,9 +187,9 @@ Skip any section that would be empty. Include `Closes {TICKET-KEY}` only if a Ji
 
 ## Step 3: Jira Ticket Integration (Conditional)
 
-This step only runs if a Jira ticket ID was detected in **Step 1b**. If no ticket was found, skip this step entirely and end the workflow.
+This step only runs if a Jira ticket ID was detected in **Step 1c**. If no ticket was found, skip this step entirely and end the workflow.
 
-### Step 3a: Transition Jira Ticket to "In Review"
+### Step 3a: Move Jira Ticket to In Review
 
 - Use the `jira-manager` skill to transition the ticket status to `In Review`.
 - First, fetch available transitions for the ticket:
@@ -178,7 +202,7 @@ This step only runs if a Jira ticket ID was detected in **Step 1b**. If no ticke
 
 ### Step 3b: Attach Plan Files to Jira Ticket (Conditional)
 
-This sub-step only runs if plan files were found in **Step 1c**.
+This sub-step only runs if plan files were found in **Step 1d**.
 
 For each plan file found, upload it as an attachment to the Jira ticket:
 
