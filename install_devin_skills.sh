@@ -12,7 +12,7 @@ workflows_dir="$base_dir/global_workflows"
 skills_dir="$base_dir/skills"
 
 # Define what to copy
-workflows=("bootstrap-context" "draft-pr" "execute-plan" "ticket-to-plan")
+workflows=("bootstrap-context" "draft-pr" "execute-plan" "review-plan" "ticket-to-plan")
 skills=("github-manager" "jira-manager" "planner")
 
 # Track what was copied
