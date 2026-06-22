@@ -1,0 +1,638 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="auto">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Prompt Editor</title>
+<style>
+  /* ─── Theme tokens ─────────────────────────────────────────────── */
+  :root {
+    --paper:      #f3efe6;
+    --surface:    #fbf9f4;
+    --sidebar:    #ebe6d9;
+    --ink:        #26221b;
+    --ink-soft:   #6b6456;
+    --ink-faint:  #a39a87;
+    --line:       #ddd6c6;
+    --line-soft:  #e7e1d3;
+    --accent:     #b65c34;
+    --accent-soft:#d9b8a4;
+    --shadow:     0 1px 2px rgba(40,33,20,.05), 0 6px 18px rgba(40,33,20,.04);
+    --radius:     10px;
+
+    --serif: "Iowan Old Style", "Palatino Linotype", Palatino, "Book Antiqua", Georgia, serif;
+    --sans:  ui-sans-serif, -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    --mono:  ui-monospace, "SF Mono", "Cascadia Code", "Consolas", monospace;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root[data-theme="auto"] {
+      --paper:      #1c1a16;
+      --surface:    #242019;
+      --sidebar:    #181612;
+      --ink:        #ece6d8;
+      --ink-soft:   #a59c89;
+      --ink-faint:  #6f6757;
+      --line:       #34302750;
+      --line-soft:  #2f2b23;
+      --accent:     #e2895c;
+      --accent-soft:#5c4131;
+      --shadow:     0 1px 2px rgba(0,0,0,.25), 0 8px 24px rgba(0,0,0,.18);
+    }
+  }
+  :root[data-theme="dark"] {
+    --paper:      #1c1a16;  --surface:  #242019;  --sidebar: #181612;
+    --ink:        #ece6d8;  --ink-soft: #a59c89;  --ink-faint:#6f6757;
+    --line:       #34302750;--line-soft:#2f2b23;  --accent:  #e2895c;
+    --accent-soft:#5c4131;
+    --shadow:     0 1px 2px rgba(0,0,0,.25), 0 8px 24px rgba(0,0,0,.18);
+  }
+
+  /* ─── Reset / base ─────────────────────────────────────────────── */
+  * { box-sizing: border-box; margin: 0; }
+  html, body { height: 100%; }
+  body {
+    font-family: var(--sans);
+    color: var(--ink);
+    background: var(--paper);
+    -webkit-font-smoothing: antialiased;
+    text-rendering: optimizeLegibility;
+  }
+  button { font: inherit; color: inherit; cursor: pointer; background: none; border: none; }
+  textarea, input { font: inherit; color: inherit; background: none; border: none; outline: none; }
+  ::selection { background: var(--accent-soft); }
+
+  /* ─── App shell ───────────────────────────────────────────────── */
+  .app { display: grid; grid-template-columns: 248px 1fr; height: 100vh; }
+
+  /* ─── Sidebar ─────────────────────────────────────────────────── */
+  .sidebar {
+    background: var(--sidebar);
+    border-right: 1px solid var(--line);
+    display: flex; flex-direction: column;
+    min-width: 0;
+  }
+  .brand {
+    padding: 22px 22px 16px;
+    font-family: var(--serif);
+    font-size: 19px; letter-spacing: .2px;
+    display: flex; align-items: baseline; gap: 7px;
+  }
+  .brand .dot { width: 7px; height: 7px; border-radius: 50%; background: var(--accent); display: inline-block; transform: translateY(-1px); }
+  .groups-label {
+    padding: 6px 22px; font-family: var(--mono);
+    font-size: 10.5px; letter-spacing: .14em; text-transform: uppercase;
+    color: var(--ink-faint);
+  }
+  .group-list { flex: 1; overflow-y: auto; padding: 2px 12px 12px; }
+  .group {
+    display: flex; align-items: center; gap: 8px;
+    padding: 8px 10px; border-radius: 7px;
+    color: var(--ink-soft); position: relative;
+    cursor: pointer; user-select: none;
+  }
+  .group:hover { background: color-mix(in srgb, var(--ink) 6%, transparent); }
+  .group.active { background: color-mix(in srgb, var(--accent) 13%, transparent); color: var(--ink); }
+  .group.active::before {
+    content: ""; position: absolute; left: -2px; top: 8px; bottom: 8px;
+    width: 3px; border-radius: 3px; background: var(--accent);
+  }
+  .group .gname { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 14.5px; }
+  .group .gname-input { flex: 1; min-width: 0; font-size: 14.5px; border-bottom: 1px solid var(--accent); padding-bottom: 1px; }
+  .group .gcount { font-family: var(--mono); font-size: 11px; color: var(--ink-faint); }
+  .group .gdel {
+    opacity: 0; font-size: 16px; line-height: 1; color: var(--ink-faint);
+    padding: 0 2px; border-radius: 4px; transition: opacity .12s, color .12s;
+  }
+  .group:hover .gdel { opacity: 1; }
+  .group .gdel:hover { color: var(--accent); }
+  .new-group {
+    margin: 4px 12px 14px; padding: 9px 12px; border-radius: 7px;
+    color: var(--ink-soft); font-size: 14px; text-align: left;
+    border: 1px dashed var(--line); display: flex; align-items: center; gap: 8px;
+    transition: border-color .12s, color .12s;
+  }
+  .new-group:hover { color: var(--ink); border-color: var(--ink-faint); }
+  .sidebar-foot {
+    border-top: 1px solid var(--line); padding: 10px 14px;
+    display: flex; gap: 6px; align-items: center;
+  }
+  .foot-btn {
+    font-size: 12.5px; color: var(--ink-soft); padding: 6px 9px; border-radius: 6px;
+    display: flex; align-items: center; gap: 6px; transition: background .12s, color .12s;
+  }
+  .foot-btn:hover { background: color-mix(in srgb, var(--ink) 7%, transparent); color: var(--ink); }
+  .foot-btn.icon-only { margin-left: auto; }
+
+  /* ─── Main ────────────────────────────────────────────────────── */
+  .main { display: flex; flex-direction: column; min-width: 0; background: var(--paper); }
+  .main-head {
+    display: flex; align-items: center; gap: 14px;
+    padding: 24px 40px 14px; max-width: 860px; width: 100%; margin: 0 auto;
+  }
+  .menu-btn { display: none; font-size: 20px; color: var(--ink-soft); padding: 4px 8px; }
+  .group-title {
+    font-family: var(--serif); font-size: 27px; letter-spacing: .2px;
+    flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  }
+  .group-title-input { font-family: var(--serif); font-size: 27px; flex: 1; min-width: 0; border-bottom: 2px solid var(--accent); }
+  .hint { font-size: 12.5px; color: var(--ink-faint); font-family: var(--mono); white-space: nowrap; }
+
+  .stack-scroll { flex: 1; overflow-y: auto; padding: 6px 40px 40vh; }
+  .stack { max-width: 860px; margin: 0 auto; display: flex; flex-direction: column; gap: 16px; }
+
+  /* ─── Card ────────────────────────────────────────────────────── */
+  .card {
+    background: var(--surface); border: 1px solid var(--line-soft);
+    border-radius: var(--radius); box-shadow: var(--shadow);
+    transition: border-color .15s, box-shadow .15s;
+    position: relative; overflow: hidden;
+  }
+  .card:focus-within { border-color: var(--accent-soft); box-shadow: var(--shadow), 0 0 0 3px color-mix(in srgb, var(--accent) 12%, transparent); }
+  .card.draft { background: transparent; box-shadow: none; border-style: dashed; border-color: var(--line); }
+  .card.draft:focus-within { background: var(--surface); border-style: solid; }
+
+  .card-head {
+    display: flex; align-items: center; gap: 10px;
+    padding: 12px 14px 0 18px;
+  }
+  .title-input {
+    flex: 1; min-width: 0;
+    font-family: var(--mono); font-size: 11.5px; letter-spacing: .1em;
+    text-transform: uppercase; color: var(--ink-soft);
+  }
+  .title-input::placeholder { color: var(--ink-faint); text-transform: uppercase; letter-spacing: .1em; }
+
+  .card-tools { display: flex; align-items: center; gap: 2px; opacity: 0; transition: opacity .12s; }
+  .card:hover .card-tools, .card:focus-within .card-tools { opacity: 1; }
+  .card.draft .card-tools { display: none; }
+  .tool {
+    font-size: 12px; color: var(--ink-soft); padding: 5px 9px; border-radius: 6px;
+    display: flex; align-items: center; gap: 5px; transition: background .12s, color .12s;
+  }
+  .tool:hover { background: color-mix(in srgb, var(--ink) 7%, transparent); color: var(--ink); }
+  .tool.copied { color: var(--accent); }
+  .tool svg { width: 13px; height: 13px; }
+
+  .body-input {
+    width: 100%; resize: none; display: block;
+    padding: 8px 18px 16px; line-height: 1.62; font-size: 16px;
+    font-family: var(--serif);
+    min-height: 2.6em; max-height: 62vh; overflow-y: auto;
+  }
+  .body-input::placeholder { color: var(--ink-faint); font-family: var(--serif); }
+
+  .empty-note { text-align: center; color: var(--ink-faint); font-size: 13.5px; padding: 30px 0 8px; font-family: var(--mono); }
+
+  /* ─── Toast / undo ────────────────────────────────────────────── */
+  .toast {
+    position: fixed; bottom: 26px; left: 50%; transform: translateX(-50%) translateY(20px);
+    background: var(--ink); color: var(--paper);
+    padding: 11px 14px 11px 18px; border-radius: 9px;
+    display: flex; align-items: center; gap: 14px; font-size: 13.5px;
+    box-shadow: 0 8px 30px rgba(0,0,0,.22); opacity: 0; pointer-events: none;
+    transition: opacity .2s, transform .2s; z-index: 50;
+  }
+  .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); pointer-events: auto; }
+  .toast button { color: var(--accent); font-weight: 600; padding: 4px 8px; border-radius: 6px; }
+  .toast button:hover { background: rgba(255,255,255,.1); }
+
+  /* ─── Backdrop for mobile drawer ──────────────────────────────── */
+  .backdrop { display: none; position: fixed; inset: 0; background: rgba(0,0,0,.32); z-index: 18; }
+
+  /* ─── Responsive ──────────────────────────────────────────────── */
+  @media (max-width: 720px) {
+    .app { grid-template-columns: 1fr; }
+    .sidebar {
+      position: fixed; z-index: 20; width: 270px; height: 100%;
+      transform: translateX(-100%); transition: transform .22s ease;
+    }
+    .app.drawer-open .sidebar { transform: translateX(0); }
+    .app.drawer-open .backdrop { display: block; }
+    .menu-btn { display: block; }
+    .main-head { padding: 18px 20px 12px; }
+    .stack-scroll { padding: 6px 18px 40vh; }
+    .hint { display: none; }
+  }
+  input[type=file] { display: none; }
+</style>
+</head>
+<body>
+<div class="app" id="app">
+  <aside class="sidebar" id="sidebar">
+    <div class="brand"><span class="dot"></span>Prompt&nbsp;Editor</div>
+    <div class="groups-label">Groups</div>
+    <div class="group-list" id="groupList"></div>
+    <button class="new-group" id="newGroupBtn"><span>+</span> New group</button>
+    <div class="sidebar-foot">
+      <button class="foot-btn" id="exportBtn" title="Download a backup of everything">↧ Export</button>
+      <button class="foot-btn" id="importBtn" title="Load a backup">↥ Import</button>
+      <button class="foot-btn icon-only" id="themeBtn" title="Toggle light / dark">◐</button>
+      <input type="file" id="importFile" accept="application/json,.json">
+    </div>
+  </aside>
+
+  <main class="main">
+    <div class="main-head">
+      <button class="menu-btn" id="menuBtn">☰</button>
+      <div class="group-title" id="groupTitle"></div>
+      <div class="hint">Enter = newline · never sends</div>
+    </div>
+    <div class="stack-scroll" id="stackScroll">
+      <div class="stack" id="stack"></div>
+    </div>
+  </main>
+  <div class="backdrop" id="backdrop"></div>
+</div>
+
+<div class="toast" id="toast"><span id="toastMsg"></span><button id="toastAction"></button></div>
+
+<script>
+"use strict";
+(() => {
+  /* ─── Storage layer (swap to IndexedDB here if ever needed) ────── */
+  const KEY = "prompt-editor:v1";
+  const Store = {
+    load() {
+      const raw = localStorage.getItem(KEY);
+      if (!raw) return null;
+      try {
+        const data = JSON.parse(raw);
+        if (!data || !Array.isArray(data.groups)) throw new Error("bad shape");
+        return data;
+      } catch (e) {
+        console.warn("Stored data unreadable; keeping it untouched.", e);
+        corrupt = true;        // never overwrite a corrupt blob automatically
+        return null;
+      }
+    },
+    save(data) {
+      if (corrupt) return;     // refuse to clobber data we couldn't parse
+      try { localStorage.setItem(KEY, JSON.stringify(data)); }
+      catch (e) { console.error("Save failed (quota?)", e); }
+    }
+  };
+
+  /* ─── State ────────────────────────────────────────────────────── */
+  let corrupt = false;
+  const uid = (p) => p + (crypto.randomUUID ? crypto.randomUUID().slice(0, 8) : Date.now().toString(36) + Math.random().toString(36).slice(2, 6));
+  const now = () => Date.now();
+  const isBlank = (s) => !s || !s.trim();
+
+  function freshGroup(name) {
+    return { id: uid("g_"), name: name || "untitled", createdAt: now(), cards: [] };
+  }
+  function seed() {
+    const g = freshGroup("untitled");
+    return { version: 1, activeGroupId: g.id, groups: [g] };
+  }
+
+  let state = Store.load() || seed();
+  if (!state.groups.length) state.groups.push(freshGroup("untitled"));
+  if (!state.groups.find(g => g.id === state.activeGroupId)) state.activeGroupId = state.groups[0].id;
+
+  const activeGroup = () => state.groups.find(g => g.id === state.activeGroupId) || state.groups[0];
+
+  /* ─── Persistence (debounced for typing) ───────────────────────── */
+  let saveTimer = null;
+  function save(immediate) {
+    clearTimeout(saveTimer);
+    if (immediate) { Store.save(state); return; }
+    saveTimer = setTimeout(() => Store.save(state), 350);
+  }
+
+  /* ─── DOM refs ─────────────────────────────────────────────────── */
+  const $ = (id) => document.getElementById(id);
+  const app = $("app"), groupList = $("groupList"), stack = $("stack"),
+        groupTitle = $("groupTitle");
+
+  /* ─── Render: sidebar ──────────────────────────────────────────── */
+  function renderSidebar() {
+    groupList.innerHTML = "";
+    state.groups.forEach(g => {
+      const el = document.createElement("div");
+      el.className = "group" + (g.id === state.activeGroupId ? " active" : "");
+      el.tabIndex = 0;
+
+      const name = document.createElement("span");
+      name.className = "gname"; name.textContent = g.name;
+
+      const count = document.createElement("span");
+      count.className = "gcount";
+      const n = g.cards.filter(c => !isBlank(c.text) || !isBlank(c.title)).length;
+      count.textContent = n || "";
+
+      const del = document.createElement("button");
+      del.className = "gdel"; del.textContent = "×"; del.title = "Delete group";
+
+      el.append(name, count, del);
+
+      el.addEventListener("click", () => switchGroup(g.id));
+      name.addEventListener("dblclick", (e) => { e.stopPropagation(); renameGroup(el, name, g); });
+      del.addEventListener("click", (e) => { e.stopPropagation(); deleteGroup(g.id); });
+
+      groupList.appendChild(el);
+    });
+    groupTitle.textContent = activeGroup().name;
+  }
+
+  function switchGroup(id) {
+    if (id === state.activeGroupId) { closeDrawer(); return; }
+    state.activeGroupId = id; save(true);
+    renderSidebar(); renderStack(); closeDrawer();
+  }
+
+  function renameGroup(rowEl, nameEl, g) {
+    const input = document.createElement("input");
+    input.className = "gname-input"; input.value = g.name;
+    rowEl.replaceChild(input, nameEl);
+    input.focus(); input.select();
+    const commit = () => {
+      const v = input.value.trim();
+      g.name = v || g.name; save(true); renderSidebar();
+      if (g.id === state.activeGroupId) groupTitle.textContent = g.name;
+    };
+    input.addEventListener("keydown", (e) => {
+      if (e.key === "Enter") input.blur();
+      if (e.key === "Escape") { input.value = g.name; input.blur(); }
+    });
+    input.addEventListener("blur", commit);
+  }
+
+  function newGroup() {
+    let base = "untitled", name = base, i = 1;
+    const names = new Set(state.groups.map(g => g.name));
+    while (names.has(name)) { i++; name = base + " " + i; }
+    const g = freshGroup(name);
+    state.groups.push(g); state.activeGroupId = g.id; save(true);
+    renderSidebar(); renderStack();
+    // inline-rename the new group immediately
+    const row = groupList.lastElementChild;
+    if (row) renameGroup(row, row.querySelector(".gname"), g);
+  }
+
+  function deleteGroup(id) {
+    const idx = state.groups.findIndex(g => g.id === id);
+    if (idx < 0) return;
+    const removed = state.groups[idx];
+    state.groups.splice(idx, 1);
+    if (!state.groups.length) state.groups.push(freshGroup("untitled"));
+    if (state.activeGroupId === id) {
+      state.activeGroupId = (state.groups[idx] || state.groups[idx - 1] || state.groups[0]).id;
+    }
+    save(true); renderSidebar(); renderStack();
+    showToast(`Deleted “${removed.name}”`, "Undo", () => {
+      state.groups.splice(Math.min(idx, state.groups.length), 0, removed);
+      state.activeGroupId = removed.id; save(true); renderSidebar(); renderStack();
+    });
+  }
+
+  /* ─── Render: card stack ───────────────────────────────────────── */
+  function renderStack() {
+    stack.innerHTML = "";
+    const g = activeGroup();
+    g.cards.forEach(card => stack.appendChild(buildCard(card)));
+    stack.appendChild(buildCard(null)); // trailing draft
+    // size now that the textareas are in the DOM (scrollHeight reads 0 while detached)
+    stack.querySelectorAll(".body-input").forEach(autosize);
+  }
+
+  const COPY_ICON = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="11" height="11" rx="2"/><path d="M5 15V5a2 2 0 0 1 2-2h10"/></svg>';
+
+  function buildCard(card) {
+    const isDraft = !card;
+    const el = document.createElement("div");
+    el.className = "card" + (isDraft ? " draft" : "");
+
+    const head = document.createElement("div");
+    head.className = "card-head";
+
+    const title = document.createElement("input");
+    title.className = "title-input";
+    title.placeholder = "Title (optional)";
+    title.value = card ? (card.title || "") : "";
+
+    const tools = document.createElement("div");
+    tools.className = "card-tools";
+
+    const copyBtn = document.createElement("button");
+    copyBtn.className = "tool"; copyBtn.innerHTML = COPY_ICON + "<span>Copy</span>";
+    copyBtn.title = "Copy prompt (body only)";
+
+    const delBtn = document.createElement("button");
+    delBtn.className = "tool"; delBtn.textContent = "Delete";
+
+    tools.append(copyBtn, delBtn);
+    head.append(title, tools);
+
+    const body = document.createElement("textarea");
+    body.className = "body-input"; body.rows = 1;
+    body.placeholder = "Write a prompt…";
+    body.value = card ? (card.text || "") : "";
+
+    el.append(head, body);
+
+    autosize(body);
+
+    // ── typing handlers ──
+    const onInput = () => {
+      if (el.classList.contains("draft")) {
+        if (!isBlank(title.value) || !isBlank(body.value)) commitDraft();
+        return; // committed handler takes over after commit
+      }
+      const c = el._card;
+      c.title = title.value; c.text = body.value; c.updatedAt = now();
+      updateCount(); save();
+    };
+
+    function commitDraft() {
+      const g = activeGroup();
+      const c = { id: uid("c_"), title: title.value, text: body.value, createdAt: now(), updatedAt: now() };
+      g.cards.push(c);
+      el.classList.remove("draft");
+      el._card = c;
+      // a fresh draft slides in below; focus stays in the current card
+      stack.appendChild(buildCard(null));
+      updateCount(); save(true);
+    }
+
+    title.addEventListener("input", onInput);
+    body.addEventListener("input", () => { autosize(body); onInput(); });
+
+    // Enter in title → jump to body. Enter in body → newline (native).
+    title.addEventListener("keydown", (e) => {
+      if (e.key === "Enter") { e.preventDefault(); body.focus(); }
+    });
+
+    // Collapse a trailing committed-empty card (never two trailing empties)
+    const maybeDecommit = () => {
+      const c = el._card;
+      if (!c) return;
+      const g = activeGroup();
+      const isLast = g.cards[g.cards.length - 1] === c;
+      if (isLast && isBlank(c.title) && isBlank(c.text)) {
+        g.cards.pop(); save(true); renderStack();
+      }
+    };
+    title.addEventListener("blur", () => setTimeout(maybeDecommit, 0));
+    body.addEventListener("blur", () => setTimeout(maybeDecommit, 0));
+
+    // ── copy (body only) ──
+    copyBtn.addEventListener("click", () => copyText(body.value, copyBtn));
+
+    // ── delete with undo ──
+    delBtn.addEventListener("click", () => {
+      const g = activeGroup();
+      const c = el._card;
+      const idx = g.cards.indexOf(c);
+      if (idx < 0) return;
+      g.cards.splice(idx, 1);
+      save(true); renderStack();
+      showToast("Card deleted", "Undo", () => {
+        g.cards.splice(Math.min(idx, g.cards.length), 0, c);
+        save(true); renderStack();
+      });
+    });
+
+    if (card) el._card = card;
+    return el;
+  }
+
+  function autosize(ta) {
+    ta.style.height = "auto";
+    ta.style.height = Math.min(ta.scrollHeight, window.innerHeight * 0.62) + "px";
+  }
+
+  function updateCount() {
+    // refresh the active group's count chip without a full sidebar rebuild
+    const g = activeGroup();
+    const n = g.cards.filter(c => !isBlank(c.text) || !isBlank(c.title)).length;
+    const row = [...groupList.children][state.groups.indexOf(g)];
+    if (row) row.querySelector(".gcount").textContent = n || "";
+  }
+
+  /* ─── Copy with feedback + fallback ────────────────────────────── */
+  async function copyText(text, btn) {
+    const flash = () => {
+      btn.classList.add("copied");
+      btn.innerHTML = COPY_ICON + "<span>Copied ✓</span>";
+      setTimeout(() => { btn.classList.remove("copied"); btn.innerHTML = COPY_ICON + "<span>Copy</span>"; }, 1200);
+    };
+    try {
+      if (navigator.clipboard && window.isSecureContext) {
+        await navigator.clipboard.writeText(text); flash(); return;
+      }
+      throw new Error("no clipboard api");
+    } catch {
+      const ta = document.createElement("textarea");
+      ta.value = text; ta.style.position = "fixed"; ta.style.opacity = "0";
+      document.body.appendChild(ta); ta.focus(); ta.select();
+      try { document.execCommand("copy"); flash(); }
+      catch { showToast("Copy failed — select the text manually", "", null); }
+      document.body.removeChild(ta);
+    }
+  }
+
+  /* ─── Export / Import (core: the only backup path) ─────────────── */
+  function exportData() {
+    const blob = new Blob([JSON.stringify(state, null, 2)], { type: "application/json" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    const d = new Date().toISOString().slice(0, 10);
+    a.href = url; a.download = `prompt-editor-backup-${d}.json`;
+    document.body.appendChild(a); a.click(); a.remove();
+    URL.revokeObjectURL(url);
+  }
+
+  function importData(file) {
+    const reader = new FileReader();
+    reader.onload = () => {
+      let data;
+      try {
+        data = JSON.parse(reader.result);
+        if (!data || !Array.isArray(data.groups)) throw new Error("bad shape");
+        data.groups.forEach(g => { if (!g.id || !Array.isArray(g.cards)) throw new Error("bad group"); });
+      } catch (e) {
+        showToast("Import failed — not a valid backup file", "", null);
+        return;
+      }
+      const replace = confirm(
+        "Import backup.\n\nOK = REPLACE everything with the file.\n" +
+        "Cancel = MERGE the file's groups into what you have (safe)."
+      );
+      if (replace) {
+        state = data;
+        if (!state.groups.length) state.groups.push(freshGroup("untitled"));
+        if (!state.groups.find(g => g.id === state.activeGroupId)) state.activeGroupId = state.groups[0].id;
+      } else {
+        const existing = new Set(state.groups.map(g => g.id));
+        data.groups.forEach(g => {
+          if (existing.has(g.id)) g.id = uid("g_");      // new id on collision
+          g.cards.forEach(c => { if (!c.id) c.id = uid("c_"); });
+          state.groups.push(g);
+        });
+      }
+      corrupt = false; save(true); renderSidebar(); renderStack();
+      showToast(replace ? "Replaced with backup" : "Backup merged in", "", null);
+    };
+    reader.readAsText(file);
+  }
+
+  /* ─── Toast / undo ─────────────────────────────────────────────── */
+  let toastTimer = null;
+  const toast = $("toast"), toastMsg = $("toastMsg"), toastAction = $("toastAction");
+  function showToast(msg, actionLabel, onAction) {
+    clearTimeout(toastTimer);
+    toastMsg.textContent = msg;
+    if (actionLabel) {
+      toastAction.textContent = actionLabel; toastAction.style.display = "";
+      toastAction.onclick = () => { hideToast(); onAction && onAction(); };
+    } else {
+      toastAction.style.display = "none";
+    }
+    toast.classList.add("show");
+    toastTimer = setTimeout(hideToast, 5000);
+  }
+  function hideToast() { toast.classList.remove("show"); }
+
+  /* ─── Theme toggle ─────────────────────────────────────────────── */
+  const THEME_KEY = "prompt-editor:theme";
+  function applyTheme(t) { document.documentElement.setAttribute("data-theme", t); }
+  applyTheme(localStorage.getItem(THEME_KEY) || "auto");
+  function cycleTheme() {
+    const cur = document.documentElement.getAttribute("data-theme");
+    const next = cur === "auto" ? "light" : cur === "light" ? "dark" : "auto";
+    applyTheme(next); localStorage.setItem(THEME_KEY, next);
+    showToast("Theme: " + next, "", null);
+  }
+
+  /* ─── Drawer (mobile) ──────────────────────────────────────────── */
+  function openDrawer() { app.classList.add("drawer-open"); }
+  function closeDrawer() { app.classList.remove("drawer-open"); }
+
+  /* ─── Wire up chrome ───────────────────────────────────────────── */
+  $("newGroupBtn").addEventListener("click", newGroup);
+  $("exportBtn").addEventListener("click", exportData);
+  $("importBtn").addEventListener("click", () => $("importFile").click());
+  $("importFile").addEventListener("change", (e) => { if (e.target.files[0]) importData(e.target.files[0]); e.target.value = ""; });
+  $("themeBtn").addEventListener("click", cycleTheme);
+  $("menuBtn").addEventListener("click", openDrawer);
+  $("backdrop").addEventListener("click", closeDrawer);
+  groupTitle.addEventListener("dblclick", () => {
+    const row = [...groupList.children][state.groups.indexOf(activeGroup())];
+    if (row) { switchGroup(activeGroup().id); renameGroup(row, row.querySelector(".gname"), activeGroup()); }
+  });
+
+  window.addEventListener("resize", () => stack.querySelectorAll(".body-input").forEach(autosize));
+
+  if (corrupt) showToast("Saved data couldn't be read — it's left untouched. Working in a temporary copy.", "", null);
+
+  /* ─── Go ───────────────────────────────────────────────────────── */
+  renderSidebar();
+  renderStack();
+  // focus the empty card's body so the user can type immediately
+  const firstBody = stack.querySelector(".card.draft .body-input");
+  if (firstBody) firstBody.focus();
+})();
+</script>
+</body>
+</html>
