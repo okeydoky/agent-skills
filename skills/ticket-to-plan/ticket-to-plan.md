@@ -49,8 +49,6 @@ Before proceeding to Step 2, compile a concise context summary that includes:
 
 This synthesized context will be passed to the `planner` skill in Step 3.
 
-> **Note:** Do NOT transition the ticket's status yet — discovery may still reshape or invalidate the work. The transition to **In Development** happens in Step 5, after the plan is confirmed.
-
 ## Step 2: Set Up Development Branch
 
 - Determine the branch name using the convention: `{jira_ticket_id}_{short_concise_descriptive_name}`
@@ -62,6 +60,11 @@ This synthesized context will be passed to the `planner` skill in Step 3.
      - Otherwise, detect the default branch (`master` or `main`) and use it.
   2. Fetch the latest from the remote for the base branch.
   3. Create and check out the new branch from the base branch.
+
+### 2a. Update Ticket Status to In Development
+
+- Use the `jira-manager` skill to transition the primary ticket's status to **In Development**.
+- If the transition fails, report the error to the user and continue.
 
 ## Step 3: Draft Implementation Plan
 
@@ -80,16 +83,7 @@ After the planner skill completes, verify the generated plan meets the **handoff
 
 If the plan references vague terms ("the relevant service", "update as needed"), contains steps that require re-discovery of context, or lacks rationale for key decisions — **send it back to the planner for revision** before confirming with the user.
 
-## Step 5: Transition Ticket & Hand Off
-
-Only run this step **after the user has confirmed the plan** (the planner skill's final confirmation).
-
-### 5a. Update Ticket Status to In Development
-
-- Use the `jira-manager` skill to transition the primary ticket's status to **In Development**.
-- If the transition fails, report the error to the user and continue.
-
-### 5b. Hand Off for Execution
+## Step 5: Hand Off
 
 - The **default execution mode is a fresh session per phase (or phase batch)**, using the model recommended in the plan's Phase Complexity Summary. A new session costs nothing extra under per-prompt pricing, sheds planning context the executor doesn't need, and lets the user drop to the cheaper recommended model. Executing in this session is the exception, only when the user explicitly asks.
 - Close by telling the user the plan file path, the first phase's recommended model, and any batching hint, e.g.:

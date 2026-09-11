@@ -307,16 +307,9 @@ Before presenting to the user, critically evaluate the plan against this checkli
 
 If any answer is "no," revise the plan before proceeding. Add missing specificity, context, or rationale.
 
-## Step 8: Confirm with User & Propose CONTEXT.md Updates
+## Step 8: Propose CONTEXT.md Updates
 
-End with a **single message** containing both items below — do not split them into separate rounds:
-
-1. **Plan confirmation** — ask the user to review the plan and confirm before execution begins. For example:
-
-   > Does this plan look good? Let me know if you'd like to adjust anything before I start.
-
-2. **CONTEXT.md update proposals (if any)** — review the Q&A Log and Design Decisions for entries worth promoting to the relevant `CONTEXT.md` (root, or the app's file in a monorepo):
-
+1. **CONTEXT.md update proposals (if any)** — review the Q&A Log and Design Decisions for entries worth promoting to the relevant `CONTEXT.md` (root, or the app's file in a monorepo):
    - **Glossary terms** — only terms coined inside this codebase whose meaning isn't obvious from the name. General programming concepts never qualify.
    - **Durable decisions** — only decisions passing **all three** tests: hard to reverse, AND surprising without context, AND the result of a genuine trade-off. Most Design Decisions fail this test — that is expected and correct.
    - **Removals** — if planning revealed an existing `CONTEXT.md` entry is outdated or wrong, propose removing or correcting it.
