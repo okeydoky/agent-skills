@@ -1,0 +1,7 @@
+{
+  "cache_dir": "archetypes",
+  "cache_dir_location": "workspace_root",
+  "workflow_search_paths": [".windsurf/workflows", "workflows"],
+  "workflow_fallback_files": ["WORKFLOW.md", "README.md", "INSTRUCTIONS.md"],
+  "max_dependency_depth": 5
+}
