@@ -19,7 +19,7 @@ $copilotBaseDir = if ($env:COPILOT_HOME) { $env:COPILOT_HOME } else { Join-Path 
 $copilotSkillsDir = Join-Path $copilotBaseDir "skills"
 
 # Define what to copy: every skill folder (each contains a SKILL.md)
-$skills = @("archetype-discover", "archetype-invoker", "bootstrap-context", "draft-pr", "execute-plan", "review-plan", "ticket-to-plan", "github-manager", "jira-manager", "planner")
+$skills = @("archetype-discover", "archetype-invoker", "bootstrap-context", "draft-jira", "draft-pr", "execute-plan", "review-plan", "ticket-to-plan", "github-manager", "jira-manager", "planner")
 
 # Track what was copied
 $copiedItems = @()

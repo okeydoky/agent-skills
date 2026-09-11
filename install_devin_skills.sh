@@ -17,7 +17,7 @@ copilot_base_dir="${COPILOT_HOME:-$HOME/.copilot}"
 copilot_skills_dir="$copilot_base_dir/skills"
 
 # Define what to copy: every skill folder (each contains a SKILL.md)
-skills=("archetype-discover" "archetype-invoker" "bootstrap-context" "draft-pr" "execute-plan" "review-plan" "ticket-to-plan" "github-manager" "jira-manager" "planner")
+skills=("archetype-discover" "archetype-invoker" "bootstrap-context" "draft-jira" "draft-pr" "execute-plan" "review-plan" "ticket-to-plan" "github-manager" "jira-manager" "planner")
 
 # Track what was copied
 declare -a copied_items
