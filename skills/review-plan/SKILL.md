@@ -1,4 +1,5 @@
 ---
+name: review-plan
 description: Cold-read adversarial review of a finished implementation plan. Runs in a fresh session with no planning context, verifies the plan's claims against the actual codebase, and produces a verdict (SHIP / REVISE / BLOCK) with evidence-backed findings written to a sibling review file. Findings-only — it never edits the plan.
 ---
 

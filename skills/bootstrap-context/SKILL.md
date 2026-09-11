@@ -1,4 +1,5 @@
 ---
+name: bootstrap-context
 description: One-time interview that seeds a repo's CONTEXT.md files (glossary + durable decisions). The agent explores the codebase, drafts candidates, and grills the user to confirm — the user ratifies, the agent proposes.
 ---
 

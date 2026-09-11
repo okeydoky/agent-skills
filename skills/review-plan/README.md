@@ -43,4 +43,4 @@ Output is written to a **sibling review file** next to the plan: `{plan}-review.
 
 ## Install
 
-No tooling — pure workflow document. Install `review-plan.md` into your platform's skill/command location (or invoke it directly as the `review-plan` skill).
+No tooling — pure workflow document. Install the `review-plan/` folder (containing `SKILL.md`) into your platform's skill location (or invoke it directly as the `review-plan` skill).

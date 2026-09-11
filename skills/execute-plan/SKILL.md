@@ -1,4 +1,5 @@
 ---
+name: execute-plan
 description: Execute one or more phases from an implementation plan, then update the plan with completion status and implementation notes for downstream sessions.
 ---
 

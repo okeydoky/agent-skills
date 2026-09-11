@@ -23,7 +23,7 @@ node bin/npm-update-helper.mjs node-check  [--cwd DIR]
 ```
 
 All commands print JSON to stdout. `classify` defers Angular/Nx framework versions
-to `nx migrate` / `ng update` (it only *detects* framework-managed packages);
+to `nx migrate` / `ng update` (it only _detects_ framework-managed packages);
 `validate` is the cheap `--package-lock-only` phase of the two-phase install gate.
 
 ## Install
@@ -32,12 +32,6 @@ to `nx migrate` / `ng update` (it only *detects* framework-managed packages);
 
 Copy/symlink this directory to `~/.claude/skills/npm-update/` so it contains
 `SKILL.md` + `bin/` + `lib/` + `npm-update.md`. Invoke with `/npm-update`.
-
-### Windsurf (workflow)
-
-Place `windsurf/npm-update.md` at `~/.codeium/windsurf/workflows/npm-update.md`
-(global) or `.windsurf/workflows/npm-update.md` (per-repo), and set the absolute
-`HELPER` path inside it. Invoke with `/npm-update`.
 
 ## Develop / test
 

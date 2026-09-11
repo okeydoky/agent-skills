@@ -1,4 +1,5 @@
 ---
+name: draft-pr
 description: Create a draft PR and optionally update the associated Jira ticket.
 ---
 

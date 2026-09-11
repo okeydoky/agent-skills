@@ -1,4 +1,5 @@
 ---
+name: ticket-to-plan
 description: Retrieve a Jira ticket, set up a development branch, and draft an implementation plan.
 ---
 
