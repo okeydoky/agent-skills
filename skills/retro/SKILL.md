@@ -65,7 +65,7 @@ For each surviving candidate pick ONE type and ONE target.
 | `.devin/rules/*.md` (legacy `.windsurf/rules/`) | not read | read | Devin-only -> mirror or use `AGENTS.md` |
 | Global: `~/.copilot/instructions/<name>.instructions.md` | read (frontmatter `applyTo: '*'`) | not read | write **both** globals with identical body |
 | Global: `~/.codeium/windsurf/memories/global_rules.md` | not read | read | write **both** globals with identical body |
-| Skills (`SKILL.md` with `name` + `description` frontmatter) | `~/.copilot/skills/` or repo skills dir | `~/.codeium/windsurf/skills/` | keep body platform-agnostic |
+| Skills (`SKILL.md` with `name` + `description` frontmatter) | `~/.copilot/skills/` or repo skills dir | imports from `~/.copilot/skills/` | keep body platform-agnostic |
 
 Rules of thumb:
 - Repo-level -> `AGENTS.md` (single file, both platforms). Do not create per-platform duplicates unless the user asks.
@@ -78,7 +78,7 @@ Rules of thumb:
 
 When a skill you invoked caused friction:
 1. Identify the skill and the exact defect (step unclear, wrong command, missing precondition, missing failure handling).
-2. **Ask the user for the skill's source location** (the installed copy in `~/.copilot/skills/`, `~/.codeium/windsurf/skills/` or `global_workflows/` is usually a copy; edits there get overwritten on reinstall). Use `ask_user` if available.
+2. **Ask the user for the skill's source location** (the installed copy in `~/.copilot/skills/` is usually a copy; edits there get overwritten on reinstall). Use `ask_user` if available.
 3. Recommend an edit to the **source**, and remind to re-run the install script afterward so both platforms get it.
 
 ### Knowledge-system repos

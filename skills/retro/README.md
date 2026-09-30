@@ -12,8 +12,7 @@ Designed for VS Code + GitHub Copilot and Devin IDE. Repo-level lessons go to `A
 
 ## Install
 
-- **Devin IDE:** `install_devin_skills.ps1` / `.sh` at the repo root copies it to `~/.codeium/windsurf/skills/retro/`.
-- **VS Code Copilot:** copy/symlink `skills/retro/` to `~/.copilot/skills/retro/`.
+Run `install_devin_skills.ps1` / `.sh` at the repo root. It copies the skill to `~/.copilot/skills/retro/`, which VS Code Copilot reads and Devin imports from directly.
 
 ## Use
 
