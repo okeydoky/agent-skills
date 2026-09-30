@@ -14,6 +14,7 @@ A monorepo for agentic skill and workflow development — reusable, installable 
 | **execute-plan** | Execute one or more plan phases, verify with tests, and update the plan with downstream-focused implementation notes | [`skills/execute-plan/`](skills/execute-plan/) |
 | **draft-pr** | Draft a PR from the diff + plan files, then transition the Jira ticket and attach the plans | [`skills/draft-pr/`](skills/draft-pr/) |
 | **bootstrap-context** | One-time interview that seeds a repo's (or monorepo app's) `CONTEXT.md` glossary + durable-decision files for the planner to read | [`skills/bootstrap-context/`](skills/bootstrap-context/) |
+| **retro** | End-of-session retrospective: reviews failures, workarounds, decisions, and skill friction, then recommends (never auto-applies) what to persist; compatible with VS Code Copilot and Devin IDE | [`skills/retro/`](skills/retro/) |
 
 ## Structure
 

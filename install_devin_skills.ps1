@@ -15,7 +15,7 @@ $skillsDir = Join-Path $baseDir "skills"
 
 # Define what to copy
 $workflows = @("bootstrap-context", "draft-pr", "execute-plan", "review-plan", "ticket-to-plan")
-$skills = @("github-manager", "jira-manager", "planner")
+$skills = @("github-manager", "jira-manager", "planner", "retro")
 
 # Track what was copied
 $copiedItems = @()
