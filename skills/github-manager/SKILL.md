@@ -109,83 +109,66 @@ Before every operation, auto-detect the current repository context. These values
 
 ## 2. Running API Calls
 
-Use the appropriate method for the active shell:
+Use the **first available method** in priority order below. On machines with corporate SSL-inspection proxies (e.g. ATT), plain curl and PowerShell `Invoke-RestMethod` often fail; `gh api` handles both auth and proxy natively.
 
-**bash/zsh** — use the helper script:
+### Preferred: `gh` CLI
+
+Check availability and auth first:
+
+```bash
+gh auth status 2>/dev/null && echo "gh_ok" || echo "gh_missing_or_unauthed"
+```
+
+If `gh_ok`, use `gh api` for all operations:
+
+```bash
+# GET
+gh api /repos/$GH_OWNER/$GH_REPO/pulls
+
+# POST / PATCH / PUT with a JSON payload file
+gh api /repos/$GH_OWNER/$GH_REPO/pulls --method POST --input payload.json
+
+# DELETE
+gh api /repos/$GH_OWNER/$GH_REPO/pulls/123 --method DELETE
+```
+
+> `gh api` authenticates via `gh auth login` — it does **not** use `~/.levelup`. If the user has not run `gh auth login`, fall back to the curl path below.
+
+### Fallback: bash `curl -k`
+
+Use the helper script (includes `-k` for corporate SSL-inspection proxies):
 
 ```bash
 SKILL_DIR="$(cd "$(dirname "${BASH_SOURCE[0]:-$0}")" && pwd)"
-bash "$SKILL_DIR/scripts/github.sh" "<ENDPOINT>" '<BODY>' <METHOD>
+bash "$SKILL_DIR/scripts/github.sh" "<ENDPOINT>" [payload_json_or_file] [METHOD]
 ```
 
-**PowerShell** — use the helper script:
+For GET requests omit the body argument. For DELETE use `DELETE` as the method.
+
+### Last resort: PowerShell script
+
+**Known limitation:** `Invoke-RestMethod` fails with 400 "Problems parsing JSON" for multiline request bodies on machines with corporate SSL-inspection proxies. Use only for simple GET requests or when bash is entirely unavailable.
 
 ```powershell
 $SKILL_DIR = Split-Path -Parent $PSCommandPath
-& "$SKILL_DIR\scripts\github.ps1" "<ENDPOINT>" '<BODY>' <METHOD>
+& "$SKILL_DIR\scripts\github.ps1" "<ENDPOINT>" [payload_json_or_file] [METHOD]
 ```
 
-For GET requests omit the body argument. For DELETE requests omit the body and use `DELETE` as the method.
-
-### PowerShell Payload Rule (Required for Complex JSON)
-
-When using PowerShell with `POST`, `PATCH`, or `PUT`, prefer **file-based payloads** over inline JSON.
-
-- The helper script already supports payload files directly.
-- Inline JSON with nested quotes/newlines can trigger PowerShell continuation mode (`>>`) and break execution.
-- If you see `>>`, press `Ctrl+C`, then rerun using a payload file.
-
-**Recommended pattern (PowerShell):**
+When using PowerShell with `POST`, `PATCH`, or `PUT`, always use **file-based payloads**:
 
 ```powershell
-$payloadPath = Join-Path $PWD "pr_payload.json"
+$payloadPath = Join-Path $env:TEMP "gh_payload.json"
 @'
 {
-  "title": "My PR title",
-  "head": "feature/my-branch",
-  "base": "main",
-  "body": "Multi-line body with \"quotes\" and markdown.",
-  "draft": false
+  "title": "...",
+  "head": "<branch>",
+  "base": "<default>",
+  "body": "...",
+  "draft": true
 }
 '@ | Set-Content -Path $payloadPath -Encoding UTF8
-
 & "$SKILL_DIR\scripts\github.ps1" "/repos/$GH_OWNER/$GH_REPO/pulls" $payloadPath POST
-
 Remove-Item $payloadPath -ErrorAction SilentlyContinue
-```
-
-Use inline JSON in PowerShell only for very small/simple one-line payloads.
-
-### Inline Snippet (Alternative)
-
-If the helper scripts are not available, use this reusable inline snippet.
-
-> **Critical**: Always wrap in `powershell -Command { ... }`. Do NOT run as a plain one-liner — semicolons are truncated by the shell runner and the command will silently produce no output.
->
-> **Important limitation**: For complex request bodies, do not inline JSON in this snippet. Read JSON from a file and pass it as `-Body $body`.
-
-**PowerShell**:
-
-```powershell
-powershell -Command { $cfg = Get-Content "$env:USERPROFILE\.levelup" | ConvertFrom-StringData; $hdrs = @{ Authorization = "token $($cfg.GH_TOKEN)"; Accept = 'application/vnd.github+json'; 'X-GitHub-Api-Version' = '2022-11-28' }; Invoke-RestMethod -Uri "https://api.github.com<ENDPOINT>" -Headers $hdrs -Method <METHOD> -Body '<BODY>' | ConvertTo-Json -Depth 10 }
-```
-
-For GET requests, omit `-Body`. For DELETE, use `-Method DELETE` and omit `-Body`.
-
-**Inline fallback with file-based body (PowerShell):**
-
-```powershell
-powershell -Command {
-  $cfg = Get-Content "$env:USERPROFILE\.levelup" | ConvertFrom-StringData
-  $hdrs = @{
-    Authorization = "token $($cfg.GH_TOKEN)"
-    Accept = 'application/vnd.github+json'
-    'X-GitHub-Api-Version' = '2022-11-28'
-    'Content-Type' = 'application/json'
-  }
-  $body = Get-Content "<PAYLOAD_FILE_PATH>" -Raw
-  Invoke-RestMethod -Uri "https://api.github.com<ENDPOINT>" -Headers $hdrs -Method <METHOD> -Body $body | ConvertTo-Json -Depth 10
-}
 ```
 
 ## 3. Operations

@@ -70,7 +70,7 @@ if [ -n "$PAYLOAD" ]; then
     CURL_ARGS+=("${CURL_PAYLOAD_ARGS[@]}")
 fi
 
-HTTP_CODE=$(curl "${CURL_ARGS[@]}" "$FULL_URL")
+HTTP_CODE=$(curl -k "${CURL_ARGS[@]}" "$FULL_URL")
 
 echo "Debug: Status $HTTP_CODE" >&2
 
