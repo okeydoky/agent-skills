@@ -304,6 +304,7 @@ Before presenting to the user, critically evaluate the plan against this checkli
 - [ ] Are edge cases and error handling addressed in the steps (not left for the implementer to figure out)?
 - [ ] Would someone unfamiliar with the conversational context understand the full scope from the plan file alone?
 - [ ] If new data is persisted, does the plan cover **both the write path AND all read-path consumers** (display views, search results, exports, review screens)?
+- [ ] If the plan modifies exported TypeScript contracts (interfaces, types) in a shared library consumed by Angular applications, does the validation step include `nx build <app>` in addition to lib lint/test? Angular's compiler catches missing required properties (TS2739, TS2741) that ESLint and Jest do not surface.
 
 If any answer is "no," revise the plan before proceeding. Add missing specificity, context, or rationale.
 
