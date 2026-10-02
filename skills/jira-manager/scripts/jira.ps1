@@ -80,13 +80,14 @@ function Make-Request {
     }
 
     try {
-        $response = Invoke-WebRequest -Uri $fullUrl -Method $httpMethod -Headers $headers -Body $body -ErrorAction Stop
+        $response = Invoke-WebRequest -UseBasicParsing -Uri $fullUrl -Method $httpMethod -Headers $headers -Body $body -ErrorAction Stop
         Write-Host "Debug: Status $($response.StatusCode)" -ForegroundColor Cyan
         if ($response.Content) {
-            $response.Content | ConvertFrom-Json | ConvertTo-Json -Depth 10
+            $response.Content | ConvertFrom-Json | ConvertTo-Json -Depth 10 | Out-Host
         }
         return $true
     } catch {
+        if (-not $_.Exception.Response) { Write-Error "Error: $($_.Exception.Message)"; return $false }
         if ($_.Exception.Response.StatusCode -eq "Unauthorized") {
             return "401"
         }
@@ -100,7 +101,7 @@ function Make-Request {
 # 4. Try Bearer first, fallback to Basic
 $result = Make-Request "Bearer $JIRA_TOKEN"
 
-if ($result -eq "401" -and $JIRA_USER_EMAIL) {
+if ($result -is [string] -and $result -eq "401" -and $JIRA_USER_EMAIL) {
     Write-Host "Debug: Bearer Auth failed (401). Retrying with Basic Auth..." -ForegroundColor Yellow
     $pair = "$($JIRA_USER_EMAIL):$($JIRA_TOKEN)"
     $bytes = [System.Text.Encoding]::ASCII.GetBytes($pair)

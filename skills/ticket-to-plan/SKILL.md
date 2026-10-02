@@ -64,7 +64,7 @@ This synthesized context will be passed to the `planner` skill in Step 3.
 
 ### 2a. Update Ticket Status to In Development
 
-- Use the `jira-manager` skill to transition the primary ticket's status to **In Development**.
+- Use the `jira-manager` skill to list the ticket's available transitions (`GET /rest/api/2/issue/KEY/transitions`) and transition it to **In Development**, or to **In Progress** if the project's workflow has no "In Development" (e.g. FTDS).
 - If the transition fails, report the error to the user and continue.
 
 ## Step 3: Draft Implementation Plan

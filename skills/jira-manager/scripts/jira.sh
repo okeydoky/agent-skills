@@ -101,7 +101,7 @@ RESULT=$?
 
 if [ $RESULT -ne 0 ] && { [ "$LAST_HTTP_CODE" -eq 401 ] || [ "$LAST_HTTP_CODE" -eq 403 ]; } && [ -n "$JIRA_USER_EMAIL" ]; then
     echo "Debug: Auth failed ($LAST_HTTP_CODE). Retrying with Basic Auth fallback..." >&2
-    BASIC_AUTH=$(echo -n "$JIRA_USER_EMAIL:$JIRA_TOKEN" | base64)
+    BASIC_AUTH=$(echo -n "$JIRA_USER_EMAIL:$JIRA_TOKEN" | base64 | tr -d '\n')
     make_request "Basic $BASIC_AUTH"
     RESULT=$?
 fi
