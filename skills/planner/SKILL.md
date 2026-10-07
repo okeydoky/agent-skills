@@ -221,16 +221,16 @@ Format:
 
 ### 5f. Phase Complexity Assessment
 
-After all steps and assumptions are written, assess the **implementation complexity** of each phase. This classification helps the user select the most token-efficient model for each phase's execution session while maintaining correctness.
+After all steps and assumptions are written, assess the **implementation complexity** of each phase. Classify the work independently of model availability; this classification helps the user allocate execution and review effort.
 
 #### Complexity Tiers
 
-| Tier | Label               | Description                                                                                                                                | Model Guidance                |
-| ---- | ------------------- | ------------------------------------------------------------------------------------------------------------------------------------------ | ----------------------------- |
-| 1    | **Straightforward** | Clear instructions, mechanical changes, single-file or pattern-following. A basic model can execute without issues.                        | Haiku / basic model           |
-| 2    | **Moderate**        | Multi-file or some decision-making required, but scope is well-defined and patterns exist to follow.                                       | Sonnet / Opus (standard)      |
-| 3    | **Complex**         | Cross-cutting concerns, multiple interacting files/systems, requires reasoning to understand the full picture for optimal results.         | Sonnet with extended thinking |
-| 4    | **Highly Complex**  | Architectural decisions, novel patterns, large blast radius, or subtle correctness requirements. Needs the best model with deep reasoning. | Opus with extended thinking   |
+| Tier | Label               | Description                                                                                                                           |
+| ---- | ------------------- | ------------------------------------------------------------------------------------------------------------------------------------- |
+| 1    | **Straightforward** | Clear instructions, mechanical changes, single-file or pattern-following, with readily verifiable results.                            |
+| 2    | **Moderate**        | Multi-file or some decision-making required, but scope is well-defined and patterns exist to follow.                                  |
+| 3    | **Complex**         | Cross-cutting concerns, multiple interacting files/systems, requires reasoning to understand the full picture for optimal results.    |
+| 4    | **Highly Complex**  | Architectural decisions, novel patterns, large blast radius, or subtle correctness requirements requiring careful trade-off analysis. |
 
 #### How to Assess
 
@@ -258,15 +258,26 @@ Also append a summary table at the end of the `## Plan` section:
 ```markdown
 #### Phase Complexity Summary
 
-| Phase | Classification  | Recommended Model | Rationale                                                 |
-| ----- | --------------- | ----------------- | --------------------------------------------------------- |
-| 1     | Straightforward | Haiku / basic     | Mechanical type additions, single file                    |
-| 2     | Moderate        | Sonnet            | Multi-file but follows existing pattern                   |
-| 3     | Complex         | Sonnet + thinking | Novel integration across 4 services                       |
-| 4     | Highly Complex  | Opus + thinking   | New architectural pattern, subtle correctness constraints |
+| Phase | Classification  | Rationale                                                 |
+| ----- | --------------- | --------------------------------------------------------- |
+| 1     | Straightforward | Mechanical type additions, single file                    |
+| 2     | Moderate        | Multi-file but follows existing pattern                   |
+| 3     | Complex         | Novel integration across 4 services                       |
+| 4     | Highly Complex  | New architectural pattern, subtle correctness constraints |
 ```
 
-> **Note:** These are recommendations, not requirements. If in doubt, err toward one tier higher — the cost of a slightly more powerful model is lower than the cost of a failed implementation attempt that needs to be redone.
+#### General Model Selection Guidelines
+
+Append a short `#### Model Selection Guidelines` section after the complexity summary. Use capability-based guidance, not model names, versions, provider rankings, or a per-phase recommended-model column. Model offerings change frequently; the user chooses from the models currently available to them.
+
+- **Straightforward:** Start with a fast, lower-cost coding model when the steps are explicit and automated checks can readily verify the result.
+- **Moderate:** Choose a model with reliable multi-file editing, instruction-following, and tool use; use recent results on similar work in this repo as evidence.
+- **Complex:** Prioritize demonstrated cross-file reasoning and debugging ability. Consider a higher reasoning-effort setting, if available, when dependencies or failure modes are difficult to trace.
+- **Highly Complex:** Prioritize strong architectural and correctness reasoning, with independent review and explicit validation. A stronger model does not replace human approval for consequential design decisions.
+- **Check practical fit:** Confirm that the model can use the required tools and handle the relevant context, and that its data-handling policy, latency, and cost meet the user's constraints. A larger context window alone does not establish capability.
+- **Adjust using evidence:** Prefer the lowest-cost option that reliably passes the phase's checks. Escalate capability or reasoning effort when the model repeatedly misses constraints or cannot resolve a failing check; first rule out missing context or an ambiguous plan. Judge total effort, including retries and review, rather than token price alone.
+
+These guidelines are starting points, not guarantees or fixed tier-to-model assignments. Keep complexity labels unchanged when switching models, and retain the same validation requirements regardless of model choice.
 
 Use the `edit` tool to append to the existing plan file created in Step 2. Only post a brief one-line summary in chat pointing the user to the file (e.g., "Plan written to `~/.windsurf/plans/PROJ-123-add-auth.md`.").
 
