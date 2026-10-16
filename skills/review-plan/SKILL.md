@@ -56,7 +56,7 @@ Keep both. Each catches a failure class the other structurally cannot.
 A review that only reads the plan is a vibe check. Before judging anything, build an independent picture of the actual code:
 
 - Read the root `CONTEXT.md` and, in a monorepo, the `apps/<app>/CONTEXT.md` for the app this plan touches. These are the authoritative glossary and durable-decision record.
-- Read the files the plan's own **`## Context for Implementer`** section names. Judge the plan against the *real* code, not against the plan's description of the code.
+- Read the files the plan's own **`## Context for Implementer`** section names. Judge the plan against the _real_ code, not against the plan's description of the code.
 - Skim the broader area the plan touches enough to reason about consumers and integration points the plan may have missed.
 
 You now have two pictures: what the plan **says** is true, and what the repo **actually** is. The review lives in the gap between them.
@@ -70,10 +70,12 @@ You now have two pictures: what the plan **says** is true, and what the repo **a
 Work through:
 
 - **Factual claims** — every claim the plan makes about the codebase ("the facade already exposes X", "`UserService` handles token refresh"). Grep/read to confirm or refute each one. A refuted claim is a finding with `file:line` evidence.
-- **Assumptions & Risks table** — treat each assumption as a hypothesis to falsify. Can you find evidence it is wrong? An assumption the plan relies on but that the code contradicts is at least a Major.
-- **Blast-radius re-check (mandatory for data-model changes)** — if the plan adds or changes a field/column/entity property, independently grep for consumers of the *analogous existing field* and confirm the plan's Scope Boundary actually accounts for every one. Read-path consumers (search results, detail views, exports, reports, review screens) are the classic miss.
+- **Assumptions & Risks section** — treat each assumption as a hypothesis to falsify. Can you find evidence it is wrong? An assumption the plan relies on but that the code contradicts is at least a Major. Distinguish inspected facts from user decisions and unverified defaults; an empty section is valid when no material assumptions or risks were identified.
+- **Blast-radius re-check (mandatory for data-model changes)** — if the plan adds or changes a field/column/entity property, independently grep for consumers of the _analogous existing field_ and confirm the plan's Scope Boundary actually accounts for every one. Read-path consumers (search results, detail views, exports, reports, review screens) are the classic miss.
 - **Sequencing** — does any phase or step depend on something a later phase produces? Flag ordering inversions.
-- **Handoff-readiness, judged concretely** — you ARE the cold session the plan claims to support. Where did you have to **guess**, re-discover context, or resolve a vague reference ("the relevant service", "update as needed")? Each such spot is a finding. If you couldn't execute a step without asking a question, the plan failed its core promise.
+- **Handoff-readiness, judged concretely** — you ARE the cold session the plan claims to support. Flag missing targets, dependencies, interface contracts, or consequential product decisions that force guessing. Targeted verification against current code is expected, not a defect. Respect lightweight versus full-handoff depth; do not demand an interview log, multiple phases, or model recommendations when unnecessary.
+- **Completion contracts** — check each phase has an observable result tied to acceptance criteria, exact repository validation commands and expected outcomes, and a safe boundary state. Require consumer builds for changed shared contracts where needed. Flag guessed targets, validation postponed entirely to a final phase, and unsafe boundaries without required batching. Explicitly deferred/manual checks must identify the blocker and verifier, not pretend to have passed.
+- **Plan freshness** — compare relevant repository/worktree state with recorded evidence and verify the preflight handles consequential drift. A different commit alone is not a finding. For older plans without metadata, judge actual dependencies and checks rather than demanding cosmetic reformatting.
 
 ---
 
@@ -106,17 +108,17 @@ The planner's `3b` owns requirement-challenging, interactively and earlier. This
 
 Classify each finding by severity, then map to a single verdict:
 
-| Severity   | Meaning                                                            |
-| ---------- | ----------------------------------------------------------------- |
-| **Blocker**| The plan's approach or a load-bearing premise is wrong — patching won't fix it. |
-| **Major**  | A real flaw (wrong assumption, missed consumer, redundant/eliminable step, un-executable vagueness) that should be fixed before execution. |
-| **Minor**  | A nit or improvement that the implementer can absorb without re-planning. |
+| Severity    | Meaning                                                                                                                                    |
+| ----------- | ------------------------------------------------------------------------------------------------------------------------------------------ |
+| **Blocker** | The plan's approach or a load-bearing premise is wrong — patching won't fix it.                                                            |
+| **Major**   | A real flaw (wrong assumption, missed consumer, redundant/eliminable step, un-executable vagueness) that should be fixed before execution. |
+| **Minor**   | A nit or improvement that the implementer can absorb without re-planning.                                                                  |
 
-| Verdict     | Trigger                          | Means                                                        |
-| ----------- | -------------------------------- | ------------------------------------------------------------ |
-| **SHIP**    | no Blocker and no Major          | Execute as-is. Minors are noted for the implementer.         |
-| **REVISE**  | ≥1 Major, all fixable in place   | Hand findings to a **fresh planner session** for one revision round, then execute. |
-| **BLOCK**   | ≥1 Blocker                       | Re-plan — do not patch around a wrong approach.              |
+| Verdict    | Trigger                        | Means                                                                              |
+| ---------- | ------------------------------ | ---------------------------------------------------------------------------------- |
+| **SHIP**   | no Blocker and no Major        | Execute as-is. Minors are noted for the implementer.                               |
+| **REVISE** | ≥1 Major, all fixable in place | Hand findings to a **fresh planner session** for one revision round, then execute. |
+| **BLOCK**  | ≥1 Blocker                     | Re-plan — do not patch around a wrong approach.                                    |
 
 ### 5b. Anti-theater guardrails (mandatory)
 

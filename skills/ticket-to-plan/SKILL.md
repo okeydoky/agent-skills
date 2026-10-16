@@ -69,31 +69,31 @@ This synthesized context will be passed to the `planner` skill in Step 3.
 
 ## Step 3: Draft Implementation Plan
 
-> **⚠️ You MUST delegate planning to the `planner` skill via the `skill` tool. DO NOT draft a plan, write todo items, or list implementation steps yourself.**
+> **Use the `planner` skill for planning. Do not substitute an independent planning procedure.**
 
-- Call the `skill` tool with `SkillName: "planner"`.
+- Load and follow `planner` using the host's skill mechanism, or read its instructions directly if no dedicated skill tool exists.
 - Pass the **synthesized context from Step 1c** as the task description.
 - Let the planner skill handle all subsequent steps — do NOT pre-empt it by writing plan content in chat or in files yourself.
-- The planner skill will conduct a **Discovery Interview** with the user to surface hidden requirements. This is expected and necessary — do not skip or rush through it.
+- Let planner choose lightweight or full-handoff depth based on risk. It asks only for consequential unresolved decisions; do not force an interview when the code and ticket already settle the requirements.
 
 ## Step 4: Plan Quality Gate
 
 After the planner skill completes, verify the generated plan meets the **handoff readiness** bar:
 
-> **Litmus test:** Could a brand-new agent session (without this conversation's context) pick up the plan file and execute it without needing to ask clarifying questions?
+> **Litmus test:** Could a brand-new agent session start safely from the plan's intent, named files, dependencies, assumptions, and completion checks without guessing product requirements?
 
-If the plan references vague terms ("the relevant service", "update as needed"), contains steps that require re-discovery of context, or lacks rationale for key decisions — **send it back to the planner for revision** before confirming with the user.
+If the plan lacks specific targets, consequential decision rationale, or observable phase results with exact checks — **send it back to the planner for revision** before confirming with the user. Targeted code verification is expected, not a plan defect. Do not reject a lightweight plan for omitting an empty Q&A log or multi-phase complexity summary. Do not hand off a `Draft` or `Blocked` plan as ready to execute.
 
 ## Step 5: Hand Off
 
-- The **default execution mode is a fresh session per phase (or phase batch)**, using the model recommended in the plan's Phase Complexity Summary. A new session costs nothing extra under per-prompt pricing, sheds planning context the executor doesn't need, and lets the user drop to the cheaper recommended model. Executing in this session is the exception, only when the user explicitly asks.
-- Close by telling the user the plan file path, the first phase's recommended model, and any batching hint, e.g.:
+- Report the plan path, mode, readiness, first phase, required batches, and any deferred checks. Suggest a fresh session when context isolation helps; do not claim guaranteed cost savings or require per-phase model recommendations. Do not execute unless the user asks.
+- For example:
 
-  > Plan confirmed and ticket transitioned. To execute: start a new session with **Sonnet 4.6** and run `/execute-plan ~/.windsurf/plans/OASIS-495-sync-upstart.md Phase 1` (Phases 1–2 can be batched).
+  > Plan ready (lightweight). To execute, run `/execute-plan ~/.windsurf/plans/OASIS-495-sync-upstart.md Phase 1`. The plan records its required validation checks.
 
 ---
 
 ## Important
 
-- At **any point**, if you need clarification or are uncertain, **stop and ask the user**. Do NOT assume.
-- Follow all workspace rules and conventions defined in `.windsurf/rules/`.
+- Ask for consequential unresolved decisions; investigate factual uncertainty before asking. Do not invent requirements or user approval.
+- Follow the host's applicable workspace instructions and conventions, not only `.windsurf/rules/`.

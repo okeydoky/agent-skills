@@ -1,340 +1,176 @@
 ---
 name: planner
-description: Draft a structured, self-sufficient implementation plan for a task. Conducts a discovery interview, organizes work into phases, and produces a detailed plan that can be executed phase-by-phase in fresh agent sessions.
+description: Draft a grounded implementation plan for a task or Jira ticket. Use when planning changes, clarifying consequential requirements, or preparing a fresh-session handoff. Adapts depth to risk and preserves decisions, scope, and executable acceptance checks.
 ---
 
 # Planner Skill
 
-When this skill is invoked, follow the steps below **in order**. Do not skip steps.
+Produce a plan that reduces implementation uncertainty, not a longer task list. Planning does not authorize implementation, commits, or external updates.
 
-> **IMPORTANT — Output Target**: All structured output (User's Intent and the final Plan) **MUST be written to a file** in the global plans directory `~/.windsurf/plans/` using the `write_to_file` or `edit` tool. Do **not** output these sections only in the chat window. A short status message in chat (e.g., "Plan written to `~/.windsurf/plans/PROJ-123-add-auth.md`.") is fine, but the full content belongs in the file.
->
-> **File Naming Convention**: **`{jira_ticket_id}-{short-descriptive}.md`** (e.g., `PROJ-123-add-auth.md`, `OASIS-511-stepper-refactor.md`). If no Jira ticket is associated, fall back to a kebab-case slug (e.g., `fix-login-bug.md`). Determine the filename in Step 1 and use it consistently for all file operations in subsequent steps.
+## Output and Compatibility
 
----
+- Write the plan to `~/.windsurf/plans/` (Windows: `$env:USERPROFILE\.windsurf\plans\`). This is the shared location used by companion skills; it does not require the Windsurf editor.
+- Use `{jira_ticket_id}-{short-descriptive}.md`, or a kebab-case slug when no ticket is associated. Report the actual path in chat.
+- Use the host's available file-editing tools; do not assume tools named `write_to_file`, `edit`, or `skill` exist.
+- Retain `## User's Intent`, `## Context for Implementer`, `## Scope Boundary`, `## Plan`, `## Assumptions & Risks`, and `### Phase N: Name` headings in both modes. Companion skills use these sections and phase completion markers. Include `## Design Decisions` and `## Q&A Log` only when they contain useful information.
+- Read a matching existing plan before updating it. Preserve completed phases, implementation notes, user decisions, and unresolved work. Never silently overwrite execution history. If multiple plans match, ask which one to update.
+- Existing plans need not be reformatted wholesale. Apply the checks below to the affected remaining work and retain historical sections.
 
-## Step 1: Understand the Request
+## Step 1: Ground the Request and Choose Depth
 
-- Read the user's request carefully.
-- Gather context: inspect relevant files, project structure, existing code, and workspace rules/conventions as needed.
-- If the request references specific files, components, or features, read them before proceeding.
-- **Check for existing plan files**: List `~/.windsurf/plans/` and look for files that share the same Jira ticket ID prefix (e.g., if the current task is `PROJ-123`, look for `PROJ-123-*`). If a matching plan exists from a previous session, read it for context.
+1. Read the request, applicable repository instructions, and the named files or controlling implementation. Follow the host's instruction-discovery rules, not only `.windsurf/rules/`.
+2. Read relevant root/app `CONTEXT.md` files if present. Respect recorded decisions and flag conflicts; missing context files are not blockers and need not be scaffolded.
+3. Inspect the nearest relevant tests, callers, and project commands. Identify what controls the requested behavior and how to verify it. Expand investigation only for a specific unresolved dependency or risk.
+4. Locate the existing plan by ticket prefix or task slug, and choose its filename before writing.
+5. Choose a mode and briefly state why:
 
-## Step 2: Write "User's Intent" to the Plan File
+| Mode             | Use when                                                                                                            | Required depth                                                                                                 |
+| ---------------- | ------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------- |
+| **Lightweight**  | Localized, well-understood work with established patterns and readily verifiable behavior                           | Concise required sections, normally one phase; no interview unless a consequential uncertainty remains         |
+| **Full handoff** | Cross-cutting changes, migrations, ambiguous behavior, subtle correctness risks, or execution across fresh sessions | Explicit dependencies, interface contracts, evidence, risks, and enough context for each phase to start safely |
 
-Using the filename derived in Step 1, create (or overwrite) the plan file in `~/.windsurf/plans/`. Start the file with:
+Honor an explicit user preference for depth, but do not omit consequential scope or safety checks. Full handoff does not automatically mean multiple phases. Escalate depth when investigation reveals greater risk; explain why.
 
-```
-## User's Intent
-```
+## Step 2: Record Intent and Planning State
 
-In this section, write a concise summary (3–6 sentences) of what the user is trying to achieve. Cover:
+Create or update the plan using the host's file tools. Start with `## User's Intent`: summarize the goal, scope, constraints, and observable acceptance criteria without prescribing implementation.
 
-- **Goal** — what end result the user wants.
-- **Scope** — which parts of the codebase / system are affected.
-- **Constraints** — any explicit or implied constraints (tech stack, conventions, backward compatibility, etc.).
+Record concise metadata:
 
-Do NOT list implementation steps here — only the _what_ and _why_.
+- Mode and status: `Draft`, `Ready`, `In progress`, or `Blocked`.
+- Repository identity/root, branch, inspected commit (if available), and date.
+- Relevant uncommitted changes, if any. A commit alone does not describe a dirty worktree.
+- Ticket/reference and the scope of this revision, if updating a plan.
 
-Write this section to the file using `write_to_file`. Do NOT only print it in chat. Remember to write to `~/.windsurf/plans/{filename}` using the filename you determined in Step 1.
+Mark a plan awaiting answers as `Draft` or `Blocked`, never `Ready`. Do not claim repository evidence you have not inspected.
 
-## Step 3: Discovery Interview (Mandatory)
+## Step 3: Resolve Consequential Uncertainty
 
-> **This step is NOT optional.** Even if the request seems clear, you MUST generate and ask probing questions before planning. Vague tickets and "obvious" tasks are where missed nuances cause the most rework downstream.
+### 3a. Investigate Dependencies and Blast Radius
 
-The goal of this step is to surface hidden requirements, edge cases, and constraints that would otherwise only emerge during implementation. The plan will be handed off to a fresh agent session without conversational context — every nuance must be captured now or it will be lost.
+- Follow existing patterns and inspect shared interfaces and downstream callers relevant to the change.
+- For data-model changes, search consumers of the changed field and any analogous existing field. Inspect both write and read paths: services, queries, templates, detail/search views, reports, exports, and comparison/review screens.
+- Classify each identified consumer as in scope or explicitly out of scope with a short rationale. Record search boundaries and any unresolved dynamic or external consumers; do not claim exhaustive coverage without evidence.
+- For other changes, scale consumer analysis to the affected contract and risk rather than mapping the whole repository.
 
-### 3a. Investigate the Codebase
+### 3b. Challenge the Approach
 
-Before asking questions, do your homework:
+Evaluate the strongest material objection and the simplest alternative. Present pushback when it changes scope, correctness, or cost, with a recommendation grounded in code or requirements. Record consequential resolved trade-offs under `## Design Decisions`.
 
-- **Read the repo context files first.** Read the root `CONTEXT.md` and, in a monorepo, the `CONTEXT.md` of the app this task touches (e.g., `apps/<app>/CONTEXT.md`). These files are the authoritative glossary and durable-decision record — **never ask a question they already answer**, and never contradict a decision recorded there without explicitly flagging the conflict. If no `CONTEXT.md` exists, note it once in chat ("No CONTEXT.md found for this app — consider running the `bootstrap-context` workflow") and proceed without it. Do NOT scaffold one mid-plan.
-- Read the files/modules most likely affected by this task.
-- Identify existing patterns, abstractions, and conventions relevant to the work.
-- Note potential integration points, shared interfaces, and downstream consumers.
-- **Blast-radius analysis (mandatory for data-model changes):** If the task introduces or modifies a data field, column, or entity property, systematically search for all consumers of the _analogous existing field_ (e.g., if adding `secondaryReasons`, grep for every consumer of `primaryReason` or `dispositionReasonId`). List every component, pipe, service, query, and template that touches the equivalent data. This surfaces read-side consumers (search results, detail views, reports, review screens) that are easy to overlook when focused on the write path. Classify each consumer as **in-scope** or **explicitly out-of-scope** with a one-line rationale.
+If the approach is sound, proceed. Do not manufacture objections or require a ceremonial all-clear block.
 
-### 3b. Pushback (Mandatory)
+### 3c. Apply the Uncertainty Gate
 
-You are not a requirements transcriber — disagreement is a deliverable. Before generating questions, evaluate the ticket's proposed approach against what you found in the codebase and present a short **Pushback** block in chat:
+Ask only questions whose answers materially change behavior, scope, compatibility, safety, acceptance criteria, or an expensive-to-reverse decision.
 
-- **Strongest objection** — the single best argument that the ticket's approach (or a requirement) is wrong, over-scoped, under-scoped, or in conflict with an existing pattern or a `CONTEXT.md` decision. Include a recommendation for how to resolve it.
-- **Simplest alternative** — the leanest way to achieve the user's intent, if it differs from what the ticket prescribes.
+- First resolve factual questions from code, tests, instructions, and context files.
+- For each remaining user decision, give a concrete scenario, a recommended answer with rationale, and the consequence of choosing differently.
+- Batch related questions concisely. There is no minimum question count or category quota.
+- If a decision blocks a safe plan, ask and wait. Keep the plan `Draft` or `Blocked` until resolved. A follow-up round is warranted only for a newly exposed consequential ambiguity.
+- For reversible implementation details that do not affect the user contract, select the existing pattern and record an unconfirmed default as an assumption when it matters. Do not interrupt the user for routine choices.
+- If no blocking questions remain, proceed without an interview. Do not invent user approval.
 
-If, after genuine investigation, you have no real objection, write: "No objection — <one sentence on why the approach is sound>." The block itself is never optional — an explicit all-clear is the required output. Do NOT manufacture trivial objections to fill the section.
+Record actual questions, answers, and their effects in `## Q&A Log`. Keep it brief and reference decision entries rather than copying their rationale.
 
-### 3c. Generate Probing Questions
+## Step 4: Define Verifiable Phases
 
-Produce **3–8 focused questions** (not more) across these categories. Skip categories that are genuinely irrelevant, but you must cover at least 3 categories:
+- Use one phase for small tasks. Split larger work into cohesive, independently verifiable increments ordered by dependencies, not automatically by frontend/backend layers.
+- Keep tightly coupled changes together. A required shared-contract change and its consumers should not leave the repository broken between phases.
+- Size phases by coupling, uncertainty, validation cost, and context needed, not a fixed number of steps.
+- Name prerequisite phases and exact interfaces/artifacts they provide. Independent phases may be marked independent; do not assume concurrent execution is authorized.
+- Default to a buildable, testable repository at each phase boundary. If an intermediate state must be non-deployable, flag it, explain why, and mark the coupled phases as a required batch before implementation handoff.
+- Suggest batching only when dependencies, shared files, and validation support it. Session boundaries are optional, not a claim of guaranteed token savings.
 
-| Category                        | What to probe                                                                                                                                                                                                   |
-| ------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **Scope boundaries**            | What is explicitly out of scope? What adjacent code/features should NOT be touched?                                                                                                                             |
-| **Data lifecycle (read path)**  | If this feature persists new data: where is it displayed after save? (Search results, detail views, reports, exports, review/QR screens, dashboards.) Which read-only or comparison views must also be updated? |
-| **Edge cases & error handling** | What happens on failure, empty states, concurrent access, invalid inputs? Should errors be silent, logged, or surfaced to the user?                                                                             |
-| **Integration contracts**       | What does the interface between this work and existing code look like? Are there consumers that depend on current behavior?                                                                                     |
-| **Acceptance criteria gaps**    | For each AC, is the "how to verify" clear? Are there implicit ACs not stated in the ticket?                                                                                                                     |
-| **Non-functional requirements** | Performance targets, backward compatibility, migration path, feature flags, rollback strategy?                                                                                                                  |
-| **Testing expectations**        | Unit tests? Integration tests? What level of coverage? Any specific scenarios to test?                                                                                                                          |
-| **Ambiguity & trade-offs**      | Where are there multiple valid approaches? What trade-offs should the user weigh in on?                                                                                                                         |
+## Step 5: Complete the Plan
 
-Two requirements for the questions themselves:
+Keep these sections concise; expand only where it prevents a likely implementation mistake.
 
-- **Every question carries a recommended answer.** Based on your codebase investigation, attach a one-line recommended answer with its rationale to each question. This lets the user reply "all recommended except #3, which should be X" — resolving the whole interview in a single round instead of several.
-- **Stress-test with concrete scenarios, not abstractions.** Where the task involves data models or relationships, pose specific edge-case scenarios ("What happens when a Pitch has zero videos?", "Two users edit the same disposition concurrently — who wins?") rather than generic prompts ("Any edge cases?"). Concrete scenarios surface real answers; abstract questions surface shrugs.
+### Context for Implementer
 
-### 3d. Ask and Wait
+Under `## Context for Implementer`, provide:
 
-- Present questions as a concise numbered list, grouped by category, each with its **Recommended:** line.
-- Briefly explain _why_ each question matters (one sentence) so the user understands the impact of their answer.
-- **STOP and wait for the user's answers.** Do NOT proceed to Step 4 until you have responses.
-- If the user's answers reveal further ambiguity, ask follow-up questions (but keep it to one additional round max).
+- Specific relevant files/symbols and their roles, including nearby tests and existing patterns.
+- Architectural/compatibility constraints and non-obvious domain terms.
+- Verified facts with source paths/symbols; separate these from user decisions and unverified assumptions.
+- Exact interface contracts required by downstream phases where relevant.
+- A short preflight: verify repository identity, branch, relevant worktree changes, target files/contracts, and validation commands against the recorded snapshot before editing. A changed commit is a signal to inspect relevant differences, not automatic proof the plan is invalid.
 
-## Step 4: Organize into Phases
+This is a starting map, not a substitute for checking the code. Do not copy large snippets or promise that implementation needs no investigation.
 
-All plans — regardless of size — must be organized into **phases**. Phases group related steps that belong to the same layer or logical unit of work. Each phase will be implemented in a **separate agent session** for optimal token efficiency and implementation quality.
+### Scope Boundary
 
-### 4a. Identify Phases
+Under `## Scope Boundary`, partition in-scope and out-of-scope behavior and consumers with reasons. Include every consumer identified in Step 3a. State unresolved external boundaries explicitly.
 
-Group the planned work into phases based on:
+### Plan and Phase Completion Contracts
 
-- **Layer/domain boundaries** (e.g., shared interfaces, backend, frontend facade, frontend UI, cleanup, testing).
-- **Dependency order** — earlier phases should not depend on later ones.
-- **Cohesion** — steps within a phase should modify related files and serve a single purpose.
+Under `## Plan`, write ordered, actionable steps referencing concrete files/modules and explaining non-obvious approaches. Tag genuine critical-path steps `[critical]`.
 
-Each phase should be **small enough to implement in one focused session** (roughly 3–6 actionable steps). If a phase has more than 6 steps, split it further.
-
-### 4b. Determine Phase Batching Hints
-
-Evaluate which adjacent phases could be **implemented together in a single session** to save the overhead of a new session. Two phases can be batched if:
-
-- They modify the **same files** (e.g., shared interfaces + the backend that consumes them).
-- Their combined step count is **≤ 6 steps**.
-- One is trivially small (1–2 steps) and logically depends on the other.
-
-Record batching hints — these are **suggestions**, not requirements. The user decides whether to batch or separate.
-
-Proceed to Step 5.
-
-## Step 5: Draft the Plan
-
-**Append** the following sections to the plan file. This plan must be **self-sufficient** — a fresh agent session with a less powerful model should be able to execute it without asking clarifying questions or rediscovering context.
-
-### 5a. Context for Implementer
-
-Append a `## Context for Implementer` section containing:
-
-- **Relevant files & modules** — list the key files the implementer will need to read or modify, with a one-line description of each file's role.
-- **Existing patterns to follow** — describe any established patterns, abstractions, or conventions in the codebase that this work should align with. Include brief code snippets if helpful.
-- **Architectural constraints** — note any system boundaries, performance considerations, or compatibility requirements.
-- **Key terminology** — define any domain-specific terms the implementer needs to understand.
-
-This section replaces the need for the implementer to "explore and understand" — give them the understanding directly.
-
-### 5b. Q&A Log
-
-Append a `## Q&A Log` section that records every question asked during the Discovery Interview (Step 3) along with the user's answer. This preserves nuance that would otherwise be lost when the plan is handed off to a new session.
-
-Format:
+Each phase must include a completion contract:
 
 ```markdown
-## Q&A Log
+### Phase 1: Name
 
-1. **Q:** [question asked]
-   **A:** [user's answer]
-   **Impact on plan:** [how this answer shaped a specific plan decision]
+> Complexity: Straightforward | Moderate | Complex | Highly Complex - brief rationale.
+> Dependencies: None, or prerequisite phases and required interfaces/artifacts.
+> Batching hint: Optional; mark required batches explicitly.
+
+1. Concrete implementation step with target files and approach.
+2. Relevant regression coverage and validation.
+
+**Completion contract**
+
+- Observable result: Specific behavior or artifact that satisfies the linked acceptance criterion.
+- Validation: Exact commands, working directory, and expected outcomes; identify relevant test scenarios.
+- Boundary state: Buildable/testable, or explicitly non-deployable until a named required batch completes.
+- Handoff: Interfaces, deviations, or unresolved constraints the next phase needs; omit when not applicable.
 ```
 
-### 5c. Scope Boundary
+Use real repository commands, not guessed targets. Cover meaningful behavior and affected consumers, not only lint. For exported TypeScript contracts consumed by Angular apps, include `nx build <affected-app>` alongside appropriate library checks; library lint/tests alone may miss consumer type errors.
 
-Append a `## Scope Boundary` section that explicitly partitions what is **in scope** and **out of scope** for this plan. This section should be written early in the plan file (before detailed steps) so reviewers can catch omissions before investing in the full plan.
+If a required check needs unavailable tools, credentials, or external infrastructure, name the blocker, provide a concrete manual/deferred check, and state who must verify it. Do not imply it passed. Planning-time checks may verify existing behavior or command availability; do not run deployments or mutating workflows merely to validate a plan.
 
-Format:
+Acceptance criteria must map to a phase result and a check. Validation belongs with the phase, not solely in a final testing phase.
 
-```markdown
-## Scope Boundary
+### Assumptions, Risks, and Decisions
 
-### In Scope
+- Under `## Assumptions & Risks`, distinguish unverified assumptions from known risks. Use a table with ID, type, statement, evidence/verification needed, impact, and response if wrong. Write `None identified` when appropriate rather than filling the section with generic risks.
+- Pause and re-plan for invalidated assumptions that alter scope, user behavior, safety, or compatibility. Resolve minor reversible implementation details locally and record downstream-relevant deviations.
+- Under `## Design Decisions`, record only consequential choices, rationale, and meaningful rejected alternatives. Link Q&A entries where relevant rather than repeating them.
+- For full-handoff plans with multiple phases, add a `#### Phase Complexity Summary` table with phase, classification, and rationale. Classify by coupling, novelty, decision density, blast radius, and failure subtlety, not file count alone.
+- Do not copy generic model-selection advice into every plan or require a per-phase model recommendation. When asked, suggest capabilities based on complexity and demonstrated repository performance. Use the lowest-cost option that reliably meets the same checks; account for retries and review, not token price alone.
 
-- [component / feature / screen] — [reason it's included]
-- ...
+Complexity labels describe the work, independently of model choice:
 
-### Out of Scope
+| Label           | Meaning                                                                         |
+| --------------- | ------------------------------------------------------------------------------- |
+| Straightforward | Mechanical or pattern-following work with readily verifiable results            |
+| Moderate        | Bounded multi-file changes with some local judgment and established patterns    |
+| Complex         | Interacting contracts or subtle failures requiring cross-file reasoning         |
+| Highly Complex  | Consequential architectural choices, novel patterns, or broad correctness risks |
 
-- [component / feature / screen] — [reason it's excluded]
-- ...
-```
+## Step 6: Handoff Readiness Gate
 
-Populate this using the blast-radius analysis from Step 3a and answers from the discovery interview. Every consumer identified in the blast-radius analysis must appear in one of the two lists.
+Before marking the plan `Ready`, verify:
 
-### 5d. Plan Steps (Organized by Phase)
+- [ ] Goal, acceptance criteria, scope exclusions, and consequential user decisions are explicit.
+- [ ] A fresh session can start safely from named files, patterns, dependencies, and interface contracts without guessing product requirements.
+- [ ] Verified facts have evidence; assumptions are clearly labeled with a response if invalidated.
+- [ ] Changed contracts and identified read/write consumers are accounted for, including unresolved external boundaries.
+- [ ] Each phase has an observable result and exact validation commands with expected outcomes, or an explicit blocked/manual check.
+- [ ] Dependencies are ordered and intermediate states are safe or explicitly required to be batched.
+- [ ] Failure modes relevant to the task are addressed rather than delegated as vague "handle edge cases" steps.
+- [ ] Preflight explains when to adapt locally versus stop and re-plan.
+- [ ] Existing completion markers, implementation notes, and approved decisions remain intact.
+- [ ] The plan contains no unnecessary phases, duplicate rationale, or invented certainty.
 
-Append a `## Plan` section. Organize steps under phase headings:
+Revise failures before handoff. If unresolved requirements prevent readiness, keep the status `Blocked` and report the specific decision needed. An unavailable execution check may remain explicitly deferred; it must not be treated as a completed phase check.
 
-```markdown
-## Plan
+## Step 7: Close and Propose Durable Context
 
-### Phase 1: [Name] (e.g., "Shared Interfaces")
+Report the plan path, selected mode, readiness, first phase, and any blocking/deferred checks. A fresh session is useful when context isolation helps; it is not mandatory for each phase. Do not implement the plan unless the user separately asks.
 
-> **Batching hint:** Can be combined with Phase 2 (same files, 5 total steps).
+Propose `CONTEXT.md` updates only for non-obvious repo terms or durable decisions that are hard to reverse, surprising without context, and the result of a genuine trade-off. Propose corrections to outdated entries. Apply only user-approved updates; otherwise leave context files untouched. Omit an empty proposal section.
 
-1. [step]
-2. [step]
-3. [step]
+## Evaluate This Workflow
 
-### Phase 2: [Name] (e.g., "Backend API")
-
-4. [step]
-5. [step]
-```
-
-Each step should be:
-
-- **Actionable** — a single, concrete step (not a vague category).
-- **Ordered** — listed in the sequence they should be executed.
-- **Scoped** — reference specific files or modules where possible.
-- **Detailed enough to execute** — include the _what_ and _how_, not just the _what_. If a step involves a non-obvious approach, briefly explain the approach.
-
-Mark critical-path steps with a `[critical]` tag.
-
-Each phase heading should include a **batching hint** (as a blockquote) if it can be combined with an adjacent phase. If a phase must be implemented alone, omit the hint.
-
-> **Why phases matter:** The user will start a new agent session for each phase (or batch). The session receives only this plan file — the phase heading tells the implementer exactly which steps to execute and which files are in scope.
-
-### 5e. Assumptions & Risks
-
-Append a `## Assumptions & Risks` section listing:
-
-- **Assumptions** — things the plan takes as true that were not explicitly confirmed. If any assumption is wrong, the implementer should stop and re-plan.
-- **Risks** — areas where the plan is most likely to need adjustment during implementation.
-
-Format:
-
-```markdown
-## Assumptions & Risks
-
-| #   | Type       | Statement                                                       | Impact if wrong                                  |
-| --- | ---------- | --------------------------------------------------------------- | ------------------------------------------------ |
-| 1   | Assumption | The `UserService` already handles token refresh                 | Would need to add refresh logic, adding ~3 steps |
-| 2   | Risk       | The DB migration may conflict with team X's in-flight migration | Coordinate with team X before executing step 4   |
-```
-
-### 5f. Phase Complexity Assessment
-
-After all steps and assumptions are written, assess the **implementation complexity** of each phase. Classify the work independently of model availability; this classification helps the user allocate execution and review effort.
-
-#### Complexity Tiers
-
-| Tier | Label               | Description                                                                                                                           |
-| ---- | ------------------- | ------------------------------------------------------------------------------------------------------------------------------------- |
-| 1    | **Straightforward** | Clear instructions, mechanical changes, single-file or pattern-following, with readily verifiable results.                            |
-| 2    | **Moderate**        | Multi-file or some decision-making required, but scope is well-defined and patterns exist to follow.                                  |
-| 3    | **Complex**         | Cross-cutting concerns, multiple interacting files/systems, requires reasoning to understand the full picture for optimal results.    |
-| 4    | **Highly Complex**  | Architectural decisions, novel patterns, large blast radius, or subtle correctness requirements requiring careful trade-off analysis. |
-
-#### How to Assess
-
-For each phase, consider:
-
-- **Number of files and their interdependencies** — more files with tight coupling = higher complexity.
-- **Novelty** — following an existing pattern (lower) vs. creating a new abstraction (higher).
-- **Decision density** — steps that say "do X" (lower) vs. steps that require judgment calls (higher).
-- **Blast radius** — isolated changes (lower) vs. changes with many downstream consumers (higher).
-- **Error subtlety** — obvious failures like compile errors (lower) vs. silent behavioral regressions (higher).
-
-#### Output Format
-
-Embed the classification directly in each phase heading:
-
-```markdown
-### Phase 1: Shared Interfaces — ⚡ Straightforward
-
-> **Batching hint:** Can be combined with Phase 2.
-> **Complexity:** Straightforward — mechanical type additions following existing pattern in `models/`.
-```
-
-Also append a summary table at the end of the `## Plan` section:
-
-```markdown
-#### Phase Complexity Summary
-
-| Phase | Classification  | Rationale                                                 |
-| ----- | --------------- | --------------------------------------------------------- |
-| 1     | Straightforward | Mechanical type additions, single file                    |
-| 2     | Moderate        | Multi-file but follows existing pattern                   |
-| 3     | Complex         | Novel integration across 4 services                       |
-| 4     | Highly Complex  | New architectural pattern, subtle correctness constraints |
-```
-
-#### General Model Selection Guidelines
-
-Append a short `#### Model Selection Guidelines` section after the complexity summary. Use capability-based guidance, not model names, versions, provider rankings, or a per-phase recommended-model column. Model offerings change frequently; the user chooses from the models currently available to them.
-
-- **Straightforward:** Start with a fast, lower-cost coding model when the steps are explicit and automated checks can readily verify the result.
-- **Moderate:** Choose a model with reliable multi-file editing, instruction-following, and tool use; use recent results on similar work in this repo as evidence.
-- **Complex:** Prioritize demonstrated cross-file reasoning and debugging ability. Consider a higher reasoning-effort setting, if available, when dependencies or failure modes are difficult to trace.
-- **Highly Complex:** Prioritize strong architectural and correctness reasoning, with independent review and explicit validation. A stronger model does not replace human approval for consequential design decisions.
-- **Check practical fit:** Confirm that the model can use the required tools and handle the relevant context, and that its data-handling policy, latency, and cost meet the user's constraints. A larger context window alone does not establish capability.
-- **Adjust using evidence:** Prefer the lowest-cost option that reliably passes the phase's checks. Escalate capability or reasoning effort when the model repeatedly misses constraints or cannot resolve a failing check; first rule out missing context or an ambiguous plan. Judge total effort, including retries and review, rather than token price alone.
-
-These guidelines are starting points, not guarantees or fixed tier-to-model assignments. Keep complexity labels unchanged when switching models, and retain the same validation requirements regardless of model choice.
-
-Use the `edit` tool to append to the existing plan file created in Step 2. Only post a brief one-line summary in chat pointing the user to the file (e.g., "Plan written to `~/.windsurf/plans/PROJ-123-add-auth.md`.").
-
-## Step 6: Record Design Decisions
-
-After drafting the plan, **append** a `## Design Decisions` section to the plan file. This section captures every meaningful choice made during planning — both decisions driven by your own analysis and decisions made collaboratively with the user (e.g., answers from Step 3 or sub-module confirmations from Step 4).
-
-For each decision, record:
-
-- **Decision** — what was decided (e.g., "Use optimistic UI updates instead of refetching").
-- **Rationale** — why this choice was made (constraints, trade-offs, user preference, existing patterns, etc.).
-- **Alternatives considered** _(optional)_ — briefly note any rejected alternatives if relevant.
-
-Format as a numbered list. Example:
-
-```markdown
-## Design Decisions
-
-1. **Use existing `AuthService` rather than creating a new one.**
-   Rationale: The service already handles token storage and refresh logic; extending it avoids duplication and aligns with the existing pattern in `libs/shared/angular/auth`.
-
-2. **Scope changes to the `user-profile` feature lib only.**
-   Rationale: User confirmed that the change should not affect the admin portal; isolating it to the feature lib prevents unintended side effects.
-```
-
-If no significant decisions were made (trivial tasks), you may omit this section or write "No significant design decisions."
-
-## Step 7: Self-Sufficiency Check (Quality Gate)
-
-Before presenting to the user, critically evaluate the plan against this checklist:
-
-- [ ] Could a new agent session execute this plan **without asking clarifying questions**?
-- [ ] Are all file paths and module references **specific** (no "the relevant file" or "the appropriate module")?
-- [ ] Does the plan capture **why** each approach was chosen, not just **what** to do?
-- [ ] Are edge cases and error handling addressed in the steps (not left for the implementer to figure out)?
-- [ ] Would someone unfamiliar with the conversational context understand the full scope from the plan file alone?
-- [ ] If new data is persisted, does the plan cover **both the write path AND all read-path consumers** (display views, search results, exports, review screens)?
-- [ ] If the plan modifies exported TypeScript contracts (interfaces, types) in a shared library consumed by Angular applications, does the validation step include `nx build <app>` in addition to lib lint/test? Angular's compiler catches missing required properties (TS2739, TS2741) that ESLint and Jest do not surface.
-
-If any answer is "no," revise the plan before proceeding. Add missing specificity, context, or rationale.
-
-## Step 8: Propose CONTEXT.md Updates
-
-1. **CONTEXT.md update proposals (if any)** — review the Q&A Log and Design Decisions for entries worth promoting to the relevant `CONTEXT.md` (root, or the app's file in a monorepo):
-   - **Glossary terms** — only terms coined inside this codebase whose meaning isn't obvious from the name. General programming concepts never qualify.
-   - **Durable decisions** — only decisions passing **all three** tests: hard to reverse, AND surprising without context, AND the result of a genuine trade-off. Most Design Decisions fail this test — that is expected and correct.
-   - **Removals** — if planning revealed an existing `CONTEXT.md` entry is outdated or wrong, propose removing or correcting it.
-
-   The promotion filter (same as for the file itself): not cheaply re-derivable from the code, and costly to get wrong. A 50-line file the agent trusts beats a 500-line wiki it skims.
-
-   Present each proposal as a one-line addition/removal. Apply only what the user approves. If nothing qualifies, write "No CONTEXT.md updates proposed" — proposing nothing is the common case.
-
----
-
-## General Rules
-
-- **Always follow workspace rules and conventions** defined in `.windsurf/rules/` and `guidelines.md`.
-- **Never assume** — if uncertain, ask.
-- **Keep plans lean** — avoid unnecessary steps. Each step should move the task forward meaningfully.
-- **Reference existing patterns** — when the codebase already has a pattern for what's being built, call it out and follow it.
+When the user requests evaluation, compare native planning and this skill on representative, similarly scoped tasks with the same model/tool setup. Track missed requirements, clarification rounds, rework, total elapsed time/cost, and fresh-session handoff success. Treat these as observed outcomes, not guarantees. Do not add evaluation bookkeeping to ordinary plans.

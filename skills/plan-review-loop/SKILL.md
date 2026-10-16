@@ -22,7 +22,7 @@ description: Chains ticket-to-plan with a bounded cold-read review/revise cycle 
 
 ## Step 1: Generate the Initial Plan
 
-- Delegate to the `ticket-to-plan` skill with the ticket ID. Let it run its full procedure: fetch the ticket + related issues, set up the branch, transition the ticket, and delegate to `planner` for the discovery interview and first draft.
+- Delegate to the `ticket-to-plan` skill with the ticket ID. Let it run its full procedure: fetch the ticket + related issues, set up the branch, transition the ticket, and use `planner` for risk-appropriate discovery and the first draft.
 - Capture the resulting **plan file path** (e.g. `~/.windsurf/plans/OASIS-561-{slug}.md`) — every later step operates on this path.
 - `ticket-to-plan`'s own Step 4 "Plan Quality Gate" is a sanity check, not a substitute for the cold review below. Proceed to Step 2 regardless of whether it passed.
 
@@ -76,9 +76,9 @@ Report to the user:
 
 - The ticket ID and final plan file path.
 - The iteration number the `SHIP` verdict landed on, and the path to that iteration's review file.
-- The standard fresh-session execution hand-off, same as `ticket-to-plan` Step 5: recommended model and phase-batching hint, e.g.:
+- The execution hand-off, same as `ticket-to-plan` Step 5: mode, readiness, first phase, required batches, and deferred checks. A fresh session is optional; no fixed model recommendation is required. For example:
 
-  > Plan reviewed and shipped after 2 iterations (`OASIS-561-{slug}-review-2.md`). To execute: start a new session with **Sonnet 4.6** and run `/execute-plan ~/.windsurf/plans/OASIS-561-{slug}.md Phase 1`.
+  > Plan reviewed and ready (full handoff) after 2 iterations (`OASIS-561-{slug}-review-2.md`). To execute, run `/execute-plan ~/.windsurf/plans/OASIS-561-{slug}.md Phase 1`; follow the plan's required batching and validation checks.
 
 ---
 

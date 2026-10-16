@@ -19,6 +19,7 @@ description: Execute one or more phases from an implementation plan, then update
 - If the user says "next phase", find the first phase not yet marked ✅ and execute it.
 - If no phase is specified, ask the user which phase(s) to implement.
 - Check for **batching hints** on the target phase — inform the user if adjacent phases are recommended for batching and ask if they'd like to include them.
+- For a **required batch**, confirm that all coupled phases are authorized before starting. If not, stop and explain why executing only part would leave an unsafe intermediate state.
 
 ### 0c. Read Implementation Notes from Prior Phases
 
@@ -31,6 +32,14 @@ description: Execute one or more phases from an implementation plan, then update
 - If a plan step would contradict a decision recorded in `CONTEXT.md`, **stop and flag it to the user** before implementing — do not silently follow either source.
 - If no `CONTEXT.md` exists, proceed without it.
 
+### 0e. Preflight the Plan Against Current Code
+
+- Read the plan's status, repository snapshot, preflight, and target phases' dependencies/completion contracts. Do not execute a `Draft` or `Blocked` plan until consequential unresolved decisions are resolved.
+- Verify repository identity, branch, relevant worktree changes, target files/contracts, and validation commands. Inspect relevant differences from the recorded snapshot; a changed commit alone does not invalidate the plan. Preserve unrelated user edits.
+- Verify prerequisite phases' actual interfaces and results, not just completion markers. Implementation notes describe what happened; current code must still support them.
+- If relevant drift changes scope, user behavior, safety, compatibility, or a required dependency, stop and request a targeted plan revision. Resolve minor reversible details using existing patterns and record downstream-relevant deviations.
+- Older plans may lack metadata or completion contracts. Derive concrete results and focused checks from the plan and current repository before editing; ask only when a consequential decision remains unresolved. Do not require wholesale reformatting.
+
 ---
 
 ## Step 1: Implement the Target Phase(s)
@@ -38,8 +47,9 @@ description: Execute one or more phases from an implementation plan, then update
 - Execute each step within the target phase(s) **sequentially**.
 - Reference the `## Context for Implementer` section for file locations, patterns, and architectural constraints.
 - After completing each step, mentally verify it against the plan's intent — don't just mechanically follow instructions if something doesn't make sense in context.
-- If any step is ambiguous, contradicts implementation notes from a prior phase, or requires a decision not covered by the plan's Design Decisions section — **stop and ask the user**. Do NOT guess.
-- **Verify before declaring done:** run the tests relevant to the changed code (at minimum, the affected projects' unit tests). A phase with failing tests is NOT complete — fix the failures, or stop and ask the user if the failures are pre-existing or out of scope. The result becomes the "Test status" line in the implementation notes (Step 2c).
+- Ask before resolving ambiguity or conflicts that change scope, user behavior, safety, compatibility, or consequential design decisions. For routine reversible choices, follow verified existing patterns; absence of a Design Decisions section is not itself a blocker.
+- **Verify before declaring done:** validate the phase's observable result, exact checks, and boundary state. Run focused checks after meaningful edits and the required phase gates before completion; include relevant consumer builds when shared contracts change. For non-code changes, use appropriate document/script checks instead of inventing a unit-test requirement.
+- Do not mark a phase complete while required checks fail or remain unverified. Distinguish pre-existing/out-of-scope failures from regressions; report blockers rather than repairing unrelated code. Record actual commands/results and any deferred/manual checks in implementation notes.
 
 ---
 
@@ -49,7 +59,7 @@ description: Execute one or more phases from an implementation plan, then update
 
 ### 2a. Mark Phase(s) as Complete
 
-For each completed phase, update its heading in the plan file:
+Only after its completion contract is satisfied, update each completed phase heading, retaining its name and any complexity label:
 
 ```markdown
 ### Phase 2: Backend API ✅
@@ -62,6 +72,8 @@ Add a completion timestamp as a blockquote below the heading:
 ```
 
 ### 2b. Mark Individual Steps
+
+If the plan has status metadata, set it to `In progress` while work remains. Do not mark blocked/unverified work complete; record the blocker and affected checks instead.
 
 Mark each completed step with a checkbox:
 
@@ -82,7 +94,7 @@ Append an **`> Implementation Notes:`** block under the completed phase heading.
 - **New files that downstream phases need** — files created that weren't in the original plan, only if a later phase imports from or modifies them.
 - **Warnings** — things the next session should watch out for (e.g., "don't import from X, use Y instead — discovered a circular dependency").
 - **Complexity adjustment** — if the actual implementation complexity differed significantly from the plan's classification (e.g., classified as Straightforward but required cross-file reasoning), note it so the user can recalibrate model selection for similarly-classified remaining phases.
-- **Test status** — a single line: "All N tests pass" or "Tests pass with known skip: [reason]".
+- **Validation status** — commands, working directory, and actual results, including consumer builds or non-test checks where required. Identify blocked/deferred checks and their verifier; do not describe an unrun check as passing.
 
 #### What NOT to include:
 
@@ -126,7 +138,7 @@ Or if invalidated:
 
 ## Important
 
-- At **any point** during this workflow, if you need clarification or are uncertain, **stop and ask the user**. Do NOT hallucinate or assume.
-- Follow all workspace rules and conventions defined in `.windsurf/rules/`.
+- Ask for consequential unresolved decisions; investigate factual uncertainty and handle routine reversible choices locally. Do not invent requirements or user approval.
+- Follow the host's applicable workspace instructions and conventions, not only `.windsurf/rules/`.
 - Keep changes minimal and focused. Prefer small, targeted edits over large rewrites.
-- **The plan file is the source of truth** for multi-session implementation. Always leave it in a state that helps the next session succeed.
+- The plan records approved intent and handoff state; current code and validation results establish implementation facts. Reconcile material conflicts rather than treating either as infallible. Always leave the plan useful to the next session.
